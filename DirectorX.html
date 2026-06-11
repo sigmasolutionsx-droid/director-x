@@ -1,0 +1,2936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TWAIN Batch Video Router — AI Video Production Studio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    :root {
+      --bg: #06080c;
+      --surface: #0c0f16;
+      --card: #111620;
+      --border: #1c2333;
+      --border2: #252e42;
+      --gold: #c9a84c;
+      --gold2: #e8c97a;
+      --red: #ff3b3b;
+      --blue: #00aaff;
+      --green: #00e676;
+      --orange: #ff6b35;
+      --text: #e8edf5;
+      --muted: #4a5568;
+      --dim: #1a2030;
+      --accent: #00aaff;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 170, 255, 0.007) 3px, rgba(0, 170, 255, 0.007) 4px);
+      pointer-events: none;
+      z-index: 9998;
+    }
+
+    /* HEADER */
+    .app-header {
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      height: 48px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+      gap: 12px;
+    }
+    .brand {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 4px;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+    .brand span {
+      color: var(--gold);
+    }
+    .verified-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      border: 1px solid rgba(255, 107, 53, 0.35);
+      color: #ff9a6b;
+      background: rgba(255, 107, 53, 0.08);
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+    .header-right {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    /* WARNING BANNER */
+    .warning-banner {
+      background: rgba(255, 59, 59, 0.06);
+      border-bottom: 1px solid rgba(255, 59, 59, 0.18);
+      padding: 7px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .w-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8.5px;
+      letter-spacing: 0.5px;
+      color: #ff9a8a;
+      line-height: 1.6;
+      flex: 1;
+    }
+    .w-text strong {
+      color: var(--orange);
+    }
+    .w-dismiss {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .w-dismiss:hover {
+      color: var(--text);
+      border-color: var(--border2);
+    }
+
+    /* API BARS CONTAINER */
+    .api-bars-container {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    /* API BAR */
+    .api-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .api-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .api-select, .model-select {
+      background: var(--card);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      padding: 5px 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .api-select {
+      min-width: 180px;
+    }
+    .model-select {
+      min-width: 200px;
+    }
+    .api-select:focus, .model-select:focus, .api-key-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .api-key-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      min-width: 220px;
+    }
+    .api-key-input {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      padding: 5px 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      border-radius: 3px;
+      min-width: 0;
+    }
+    .api-key-input::placeholder {
+      color: var(--muted);
+    }
+    .api-save-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 5px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .api-save-btn:hover {
+      background: #33bbff;
+    }
+    .api-status {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+    .api-status.on {
+      color: var(--green);
+      border: 1px solid rgba(0, 230, 118, 0.3);
+      background: rgba(0, 230, 118, 0.06);
+    }
+    .api-status.off {
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .api-privacy {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7.5px;
+      color: var(--muted);
+    }
+
+    /* MAIN */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* SIDEBAR WITH SCROLLING PANEL PANES */
+    .platform-panel {
+      width: 230px;
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      background: var(--surface);
+      flex-shrink: 0;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .panel-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      padding: 4px 4px 10px;
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+    }
+    .plat-group {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      padding: 8px 4px 4px;
+      text-transform: uppercase;
+      opacity: 0.6;
+    }
+    .pc {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 7px 9px;
+      margin-bottom: 5px;
+      cursor: pointer;
+      transition: all .12s;
+      position: relative;
+      overflow: hidden;
+    }
+    .pc::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--pc, var(--accent));
+    }
+    .pc:hover {
+      border-color: var(--border2);
+      background: rgba(255, 255, 255, 0.015);
+    }
+    .pc.sel {
+      border-color: var(--pc, var(--accent));
+      background: rgba(0, 170, 255, 0.04);
+    }
+    .pc-top {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 3px;
+    }
+    .pc-name {
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .pc-badge {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7px;
+      padding: 1px 5px;
+      border-radius: 2px;
+    }
+    .free-b {
+      background: rgba(0, 230, 118, 0.08);
+      color: var(--green);
+      border: 1px solid rgba(0, 230, 118, 0.2);
+    }
+    .card-b {
+      background: rgba(255, 59, 59, 0.08);
+      color: #ff7a7a;
+      border: 1px solid rgba(255, 59, 59, 0.2);
+    }
+    .pc-info {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7.5px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* CHARACTER CONTINUITY SIDEBAR COMPONENT */
+    .char-card {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px;
+      background: var(--card);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .char-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .char-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+    .char-tag {
+      font-size: 7.5px;
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(201, 168, 76, 0.08);
+      padding: 1px 4px;
+      border: 1px solid rgba(201, 168, 76, 0.2);
+      border-radius: 2px;
+      color: var(--gold2);
+    }
+    .char-desc {
+      font-size: 9.5px;
+      color: var(--muted);
+      line-height: 1.4;
+      max-height: 40px;
+      overflow-y: auto;
+    }
+    .char-voice-select, .char-voice-input {
+      background: var(--dim);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      padding: 2.5px;
+      border-radius: 2px;
+      width: 100%;
+    }
+
+    /* CENTER */
+    .center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      padding: 10px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all .12s;
+    }
+    .tab-btn:hover {
+      color: var(--text);
+    }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .tab-content {
+      display: none;
+      flex: 1;
+      overflow: hidden;
+      flex-direction: column;
+    }
+    .tab-content.active {
+      display: flex;
+    }
+
+    /* BATCH SCENE PARSER TAB */
+    .script-controls {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      flex-shrink: 0;
+    }
+    .cg {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .cg label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7.5px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .c-sel, .c-inp {
+      background: var(--card);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      padding: 5px 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      border-radius: 3px;
+    }
+    .c-sel:focus, .c-inp:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .c-inp {
+      min-width: 180px;
+    }
+    .btn {
+      padding: 6px 14px;
+      border: 1px solid var(--border2);
+      background: transparent;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: all .12s;
+      white-space: nowrap;
+    }
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .btn-pri {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+      font-weight: 700;
+    }
+    .btn-pri:hover {
+      background: #33bbff;
+      color: #000;
+    }
+    .btn-gold {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: #000;
+      font-weight: 700;
+    }
+    .btn-gold:hover {
+      background: var(--gold2);
+      color: #000;
+    }
+    .btn-ghost {
+      color: var(--muted);
+    }
+    .script-area {
+      flex: 1;
+      display: flex;
+      padding: 12px;
+      gap: 16px;
+      overflow: hidden;
+    }
+    .script-ta {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      line-height: 1.6;
+      resize: none;
+      border-radius: 4px;
+      height: 100%;
+    }
+    .script-ta:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .script-ta::placeholder {
+      color: var(--muted);
+    }
+    .script-footer {
+      padding: 8px 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      background: var(--surface);
+    }
+    .script-stats {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8.5px;
+      color: var(--muted);
+    }
+
+    /* SCENE ROUTER & BATCH DASHBOARD */
+    .router-bar {
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .router-bar span {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      color: var(--muted);
+    }
+    .scene-count {
+      color: var(--accent) !important;
+    }
+    .scene-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .scene-block {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      border-left: 3px solid var(--pc, var(--border));
+    }
+    .scene-hdr {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      background: rgba(255, 255, 255, 0.018);
+      border-bottom: 1px solid var(--border);
+    }
+    .scene-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      color: var(--pc, var(--muted));
+      line-height: 1;
+    }
+    .scene-type {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7.5px;
+      letter-spacing: 2px;
+      padding: 2px 6px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+    }
+    .scene-dur {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      color: var(--muted);
+    }
+    .scene-body {
+      padding: 9px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .scene-desc {
+      font-size: 12px;
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .scene-vo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8.5px;
+      color: var(--muted);
+      padding: 5px 8px;
+      background: var(--dim);
+      border-radius: 3px;
+      line-height: 1.5;
+    }
+    .plat-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+    .plat-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      padding: 2px 8px;
+      border-radius: 3px;
+      border: 1px solid;
+      letter-spacing: 1px;
+    }
+    .routing-reason {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7.5px;
+      color: var(--muted);
+    }
+    .cost-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7px;
+      padding: 2px 6px;
+      border-radius: 2px;
+    }
+    .ct-free {
+      background: rgba(0, 230, 118, 0.07);
+      color: var(--green);
+      border: 1px solid rgba(0, 230, 118, 0.18);
+    }
+    .ct-card {
+      background: rgba(255, 59, 59, 0.07);
+      color: #ff7a7a;
+      border: 1px solid rgba(255, 59, 59, 0.18);
+    }
+    .reroute-sel {
+      background: var(--dim);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 3px 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      border-radius: 3px;
+      margin-left: auto;
+    }
+    .prompt-out {
+      background: var(--dim);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 9px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      color: var(--text);
+      line-height: 1.65;
+      white-space: pre-wrap;
+      display: none;
+      margin-top: 2px;
+    }
+    .prompt-out.vis {
+      display: block;
+    }
+
+    /* PACING & SHOT TAGS inside scene block */
+    .meta-pills-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 2px 0;
+    }
+    .meta-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7.5px;
+      padding: 1.5px 6px;
+      border-radius: 3px;
+      border: 1px solid var(--border2);
+      background: var(--dim);
+      color: var(--muted);
+    }
+    .meta-pill.shot {
+      border-color: rgba(0, 170, 255, 0.3);
+      color: var(--accent);
+      background: rgba(0, 170, 255, 0.02);
+    }
+    .meta-pill.pacing {
+      border-color: rgba(255, 107, 53, 0.3);
+      color: var(--orange);
+      background: rgba(255, 107, 53, 0.02);
+    }
+    .meta-pill.char {
+      border-color: rgba(201, 168, 76, 0.3);
+      color: var(--gold);
+      background: rgba(201, 168, 76, 0.02);
+    }
+
+    /* DRAG & DROP FILE ZONE */
+    .drop-zone {
+      border: 2px dashed var(--border2);
+      border-radius: 4px;
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      background: transparent;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(0,170,255,0.02);
+    }
+
+    /* HUNYUAN AVATAR CUSTOM INPUTS */
+    .avatar-inputs-box {
+      border: 1px dashed var(--green);
+      border-radius: 4px;
+      background: rgba(0, 230, 118, 0.02);
+      padding: 8px 12px;
+      margin: 5px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .avatar-input-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8.5px;
+      letter-spacing: 1px;
+      color: var(--green);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .avatar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .avatar-row label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      color: var(--muted);
+      width: 70px;
+      flex-shrink: 0;
+    }
+    .avatar-row input {
+      flex: 1;
+      background: var(--dim);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 10px;
+      padding: 3px 6px;
+      border-radius: 2px;
+    }
+    .avatar-row select {
+      background: var(--dim);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 9px;
+      padding: 3px;
+      border-radius: 2px;
+    }
+
+    /* INLINE VIDEO COMPONENT */
+    .video-preview-box {
+      border: 1px solid var(--border2);
+      border-radius: 4px;
+      background: #000;
+      margin-top: 5px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .video-preview-box video {
+      width: 100%;
+      height: auto;
+      max-height: 240px;
+      object-fit: contain;
+    }
+    .video-status-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(12, 15, 22, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 15px;
+      text-align: center;
+      gap: 10px;
+      z-index: 5;
+    }
+    .video-spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid rgba(0, 170, 255, 0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .video-status-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--text);
+    }
+    .video-logs-box {
+      width: 100%;
+      max-height: 60px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.4);
+      border-radius: 3px;
+      padding: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      color: var(--muted);
+      text-align: left;
+    }
+
+    .scene-actions {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    .bs {
+      padding: 3.5px 9px;
+      border: 1px solid var(--border2);
+      background: transparent;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7.5px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: all .12s;
+    }
+    .bs:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .bs.gen {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+    .bs.gen:hover {
+      background: var(--gold);
+      color: #000;
+    }
+    .bs.create-vid {
+      border-color: var(--green);
+      color: var(--green);
+      font-weight: 700;
+    }
+    .bs.create-vid:hover {
+      background: var(--green);
+      color: #000;
+    }
+    .bs.copy {
+      border-color: var(--blue);
+      color: var(--blue);
+    }
+    .bs.copy:hover {
+      background: var(--blue);
+      color: #000;
+    }
+    .bs.open {
+      border-color: var(--orange);
+      color: var(--orange);
+    }
+    .bs.open:hover {
+      background: var(--orange);
+      color: #000;
+    }
+
+    /* STORYBOARD */
+    .board-grid {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+      align-content: start;
+    }
+    .board-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all .12s;
+      display: flex;
+      flex-direction: column;
+    }
+    .board-card:hover {
+      border-color: var(--border2);
+      transform: translateY(-1px);
+    }
+    .board-frame {
+      height: 124px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: #000;
+      overflow: hidden;
+    }
+    .board-frame video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .board-placeholder-icon {
+      font-size: 32px;
+      opacity: 0.3;
+    }
+    .board-badge {
+      position: absolute;
+      bottom: 5px;
+      right: 5px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7px;
+      padding: 2px 5px;
+      border-radius: 2px;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 5;
+    }
+    .board-plat-badge {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7px;
+      padding: 2px 5px;
+      border-radius: 2px;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 5;
+    }
+    .board-info {
+      padding: 7px 8px;
+      border-top: 1px solid var(--border);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .board-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+    .board-desc {
+      font-size: 10px;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    /* TIMELINE & PACING MONITOR */
+    .timeline-wrap {
+      flex: 1;
+      overflow: auto;
+      padding: 12px;
+    }
+    .tl-track {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      min-width: 500px;
+    }
+    .tl-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tl-plat {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      color: var(--muted);
+      width: 95px;
+      flex-shrink: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .tl-bar {
+      height: 26px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7.5px;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      cursor: pointer;
+      flex: 1;
+      position: relative;
+    }
+    .tl-bar:hover {
+      opacity: 0.8;
+    }
+    .tl-bar-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      background: rgba(255,255,255,0.08);
+      z-index: 1;
+    }
+    .tl-bar-text {
+      position: relative;
+      z-index: 2;
+    }
+    .tl-dur {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      color: var(--muted);
+      margin-left: 5px;
+    }
+
+    /* PACING WAVEFORM GRAPH */
+    .pacing-visualizer-box {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 4px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .visualizer-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      color: var(--orange);
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    /* CHAT */
+    .chat-panel {
+      width: 290px;
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .chat-hdr {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .chat-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 17px;
+      letter-spacing: 3px;
+    }
+    .chat-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+    .chat-msgs {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .msg {
+      padding: 8px 10px;
+      border-radius: 4px;
+      font-size: 11.5px;
+      line-height: 1.6;
+    }
+    .msg-director {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left: 2px solid var(--accent);
+    }
+    .msg-user {
+      background: rgba(201, 168, 76, 0.07);
+      border: 1px solid rgba(201, 168, 76, 0.15);
+      border-left: 2px solid var(--gold);
+    }
+    .msg-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+    .typing {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 10px;
+    }
+    .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: bounce .8s infinite;
+    }
+    .dot:nth-child(2) { animation-delay: .15s; }
+    .dot:nth-child(3) { animation-delay: .3s; }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    .chat-inp-wrap {
+      padding: 9px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .chat-inp {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      padding: 7px 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      border-radius: 3px;
+      resize: none;
+      height: 36px;
+    }
+    .chat-inp:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .chat-send {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 7px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .chat-send:hover {
+      background: #33bbff;
+    }
+
+    /* MISC */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      height: 100%;
+      color: var(--muted);
+      text-align: center;
+      padding: 40px;
+    }
+    .empty-icon {
+      font-size: 32px;
+      opacity: 0.3;
+    }
+    .empty-msg {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      letter-spacing: 1px;
+      line-height: 1.7;
+    }
+    .progress-bar {
+      height: 2px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--gold));
+      width: 0%;
+      transition: width .3s;
+    }
+    .export-btn {
+      padding: 4px 12px;
+      background: rgba(201, 168, 76, 0.08);
+      border: 1px solid rgba(201, 168, 76, 0.25);
+      color: var(--gold);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7.5px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    .export-btn:hover {
+      background: rgba(201, 168, 76, 0.18);
+    }
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border2);
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+  <!-- HEADER -->
+  <div class="app-header">
+    <div class="brand">T.W.A.I.N. <span>CONCURRENT ROUTER</span></div>
+    <div class="verified-badge">🎬 WESTERN CINEMATIC ENGINE ACTIVE — SHOT GRAMMAR & CHARACTER CONTINUITY ENABLED</div>
+    <div class="header-right">twainstudio.dev</div>
+  </div>
+
+  <!-- WARNING BANNER -->
+  <div class="warning-banner" id="warnBanner">
+    <div class="w-text">
+      <strong>⚡ CINEMATIC ENGINE ONLINE:</strong> Automatic <strong>Shot Grammar</strong> has been mapped to establish pacing rhythm (Slow, Tension, Calm, Explosion, Aftermath). <strong>Character Continuity Layer</strong> ensures Herbert, Harbaugh, McDaniel, James, Mack, and Tuli always preserve their consistent descriptions.
+    </div>
+    <div class="w-dismiss" onclick="document.getElementById('warnBanner').style.display='none'">✕ Dismiss</div>
+  </div>
+
+  <!-- API BARS CONTAINER -->
+  <div class="api-bars-container">
+    <!-- LLM API BAR (FOR INTERACTIVE ASSISTANT & PROMPT REFINEMENTS) -->
+    <div class="api-bar">
+      <div class="api-label" style="color: var(--gold)">LLM API</div>
+      <select class="api-select" id="providerSelect" onchange="updateProviderModels()">
+        <option value="groq">Groq (Ultra-Fast · SOTA Models)</option>
+        <option value="openrouter">OpenRouter (Recommended — Free & Premium models)</option>
+        <option value="openai">OpenAI (GPT-4o / GPT-4o Mini)</option>
+        <option value="anthropic">Anthropic (Claude 3.5 Sonnet / Haiku)</option>
+        <option value="gemini">Google Gemini (Flash 1.5 / Flash 2.0)</option>
+        <option value="deepseek">DeepSeek (V3 / R1)</option>
+        <option value="xai">xAI Grok</option>
+        <option value="mistral">Mistral AI</option>
+      </select>
+      <select class="model-select" id="modelSelect"></select>
+      <div class="api-key-wrap">
+        <div class="api-label">LLM Key</div>
+        <input class="api-key-input" id="apiKeyInput" type="password" placeholder="Paste your LLM API key">
+        <button class="api-save-btn" onclick="saveApiKey()">Save LLM Key</button>
+      </div>
+      <div class="api-status off" id="apiStatus">No Key</div>
+    </div>
+
+    <!-- VIDEO GENERATION API BAR (THE BATCH ENGINE) -->
+    <div class="api-bar" style="background: var(--dim); border-top: 1px solid var(--border);">
+      <div class="api-label" style="color: var(--green)">Video API</div>
+      <select class="api-select" id="videoProviderSelect" onchange="updateVideoModels()">
+        <option value="fal-ai">Fal.ai (Kling, Luma, Hunyuan, Minimax, LTX, Wan)</option>
+        <option value="replicate">Replicate (Kling, Hunyuan, Wan, Luma)</option>
+        <option value="kling-direct">Kling AI (Official Developer Direct API)</option>
+      </select>
+      <select class="model-select" id="videoModelSelect" onchange="checkCustomModel()"></select>
+      
+      <!-- Custom model entry (hidden by default) -->
+      <input class="api-key-input" id="customModelInput" type="text" placeholder="owner/model-name or fal-ai/model" style="display: none; max-width: 150px; flex: initial;">
+
+      <div class="api-key-wrap" id="videoKeyWrapper">
+        <div class="api-label" id="videoKeyLabel">Video Key</div>
+        <input class="api-key-input" id="videoApiKeyInput" type="password" placeholder="Paste Fal.ai or Replicate key">
+        
+        <!-- Kling SK input (hidden by default) -->
+        <div class="api-label" id="klingSkLabel" style="display: none;">Secret Key</div>
+        <input class="api-key-input" id="klingSecretKeyInput" type="password" placeholder="Kling Secret Key (SK)" style="display: none; max-width: 250px;">
+        
+        <button class="api-save-btn" style="background: var(--green);" onclick="saveVideoApiKey()">Save Keys</button>
+      </div>
+      <div class="api-status off" id="videoApiStatus">No Video Key</div>
+      <div class="api-privacy">🔒 Keys stored in browser only</div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- PLATFORM PANEL & CONTINUITY sidebar -->
+    <div class="platform-panel">
+      <!-- CONTINUITY LAYER -->
+      <div class="panel-title" style="color: var(--gold)">Character Roster</div>
+      <div style="max-height: 320px; overflow-y: auto; padding-right: 2px;">
+        <div id="characterRosterContainer">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+      
+      <!-- PLATFORM ENGINE -->
+      <div class="panel-title" style="margin-top: 10px;">Video Platforms</div>
+      <div class="plat-group">✅ No Card Required</div>
+      <div class="pc" style="--pc:#10b981" onclick="selectPlatform('hunyuanavatar',this)">
+        <div class="pc-top"><span>👤</span><span class="pc-name">Hunyuan Avatar</span><span class="pc-badge free-b">FREE</span></div>
+        <div class="pc-info">Tencent's SOTA open weights avatar speaker.<br>Best: hyper-realistic lip-sync presenter clips</div>
+      </div>
+      <div class="pc" style="--pc:#a855f7" onclick="selectPlatform('kling',this)">
+        <div class="pc-top"><span>🎬</span><span class="pc-name">Kling AI</span><span class="pc-badge free-b">FREE</span></div>
+        <div class="pc-info">~66 credits/day · up to 10s · 720p<br>Best: smooth motion & consistency</div>
+      </div>
+      <div class="pc" style="--pc:#f97316" onclick="selectPlatform('pika',this)">
+        <div class="pc-top"><span>⚡</span><span class="pc-name">Pika</span><span class="pc-badge free-b">FREE</span></div>
+        <div class="pc-info">Daily credits · 3–4s clips<br>Best: stylized effects, social ads</div>
+      </div>
+      <div class="pc" style="--pc:#22c55e" onclick="selectPlatform('hailuo',this)">
+        <div class="pc-top"><span>👤</span><span class="pc-name">HaiLuo AI</span><span class="pc-badge free-b">FREE</span></div>
+        <div class="pc-info">Several free/day · up to 6s · watermark<br>Best: human faces & movement</div>
+      </div>
+      <div class="pc" style="--pc:#3b82f6" onclick="selectPlatform('googlevids',this)">
+        <div class="pc-top"><span>🔵</span><span class="pc-name">Google Vids</span><span class="pc-badge free-b">FREE</span></div>
+        <div class="pc-info">10 videos/month · ~8s · highest quality<br>Best: hero shots — use sparingly</div>
+      </div>
+    </div>
+
+    <!-- CENTER -->
+    <div class="center">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('script',this)">Upload & Parse Scenes</button>
+        <button class="tab-btn" onclick="switchTab('router',this)">Batch Router Dashboard</button>
+        <button class="tab-btn" onclick="switchTab('storyboard',this)">Storyboard Gallery</button>
+        <button class="tab-btn" onclick="switchTab('timeline',this)">Timeline & Pacing</button>
+      </div>
+
+      <!-- UPLOAD & PARSE -->
+      <div class="tab-content active" id="tab-script">
+        <div class="script-area">
+          <!-- PASTE SECTION -->
+          <div style="flex:1; display:flex; flex-direction:column; gap:8px; height:100%;">
+            <div class="api-label" style="color:var(--gold)">Option 1: Paste scenes text block / JSON array from Google Opal</div>
+            <textarea class="script-ta" id="scenePasteArea" placeholder='Paste your Google Opal scenes or structured scene script here. Both formats are parsed instantly!
+
+FORMAT 1 (JSON Array):
+[
+  {
+    "num": 1,
+    "type": "Hook",
+    "desc": "Herbert is walking slowly down the main dirt street, his star badge catching the noon sun.",
+    "duration": 5,
+    "platform": "kling"
+  }
+]
+
+FORMAT 2 (Standard Scene Blocks):
+[SCENE 1 - HOOK - 4s]
+VISUAL: A mysterious detective looking up at the holographic billboard.
+VOICEOVER: "The digital world holds more ghosts than we care to admit."
+DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textarea>
+          </div>
+
+          <!-- DROP ZONE & LOAD ACTIONS -->
+          <div style="width:280px; display:flex; flex-direction:column; gap:12px; border-left:1px solid var(--border); padding-left:16px;">
+            <div class="api-label" style="color:var(--gold)">Option 2: Drag & Drop scene file</div>
+            <div class="drop-zone" id="dropZone">
+              <span style="font-size:24px;">📁</span>
+              <span style="font-size:10px; font-family:\'JetBrains Mono\',monospace; color:var(--muted)">Drag & Drop JSON, CSV, or TXT scene list here</span>
+              <input type="file" id="fileInput" accept=".json,.csv,.txt" style="display:none;" onchange="handleFileSelect(event)">
+              <button class="btn btn-ghost" style="padding:4px 10px; font-size:8px;" onclick="document.getElementById('fileInput').click()">Browse Local Files</button>
+            </div>
+
+            <div style="margin-top:auto; display:flex; flex-direction:column; gap:8px;">
+              <button class="btn btn-pri" style="width:100%;" onclick="triggerParseAndLoad()">⚡ Parse & Load into Router</button>
+              <button class="btn btn-ghost" style="width:100%;" onclick="clearPasteArea()">Clear</button>
+            </div>
+          </div>
+        </div>
+        <div class="script-footer">
+          <div class="script-stats" id="scriptStats">0 scenes parsed and ready to queue</div>
+        </div>
+      </div>
+
+      <!-- BATCH ROUTER DASHBOARD -->
+      <div class="tab-content" id="tab-router">
+        <div class="router-bar">
+          <span class="scene-count" id="sceneCount">0 scenes loaded</span>
+          
+          <!-- GLOBAL CONTROLS -->
+          <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+            <div class="cg">
+              <select class="c-sel" id="globalModelOverride" onchange="applyGlobalModelOverride(this.value)" style="padding:3px 6px; font-size:9px;">
+                <option value="">-- Use Auto-Routed Models --</option>
+                <option value="fal-ai/kling-video/v1.6/standard/text-to-video">Force Kling 1.6 Standard</option>
+                <option value="fal-ai/ltx-video">Force LTX Video (Fastest & Cheapest)</option>
+                <option value="fal-ai/hunyuan-video">Force Hunyuan Video (Open SOTA)</option>
+                <option value="fal-ai/luma-dream-machine">Force Luma Dream Machine</option>
+              </select>
+            </div>
+
+            <div class="cg">
+              <select class="c-sel" id="concurrencySelect" style="padding:3px 6px; font-size:9px;">
+                <option value="1">Run 1 At A Time</option>
+                <option value="2" selected>Run 2 Concurrently</option>
+                <option value="3">Run 3 Concurrently</option>
+                <option value="5">Run 5 Concurrently (Pro)</option>
+              </select>
+            </div>
+
+            <button class="btn btn-pri" style="padding:3px 12px; font-size:8px;" onclick="launchConcurrentBatch()">🚀 Run Concurrent Batch</button>
+            <button class="btn btn-ghost" style="padding:3px 10px; font-size:8px; border-color:var(--red); color:var(--red);" onclick="haltAllGenerations()">🛑 Halt Queue</button>
+            <button class="export-btn" onclick="exportPlan()">Export Plan</button>
+          </div>
+        </div>
+        
+        <div class="scene-container" id="sceneContainer">
+          <div class="empty-state" id="routerEmpty">
+            <div class="empty-icon">🎬</div>
+            <div class="empty-msg">Paste scenes or load a script file on the UPLOAD tab<br>then click Parse & Load Scenes to begin batching</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STORYBOARD -->
+      <div class="tab-content" id="tab-storyboard">
+        <div class="board-grid" id="boardGrid">
+          <div class="empty-state" style="grid-column:1/-1">
+            <div class="empty-icon">🖼️</div>
+            <div class="empty-msg">Upload and render scenes to populate your storyboard gallery</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TIMELINE -->
+      <div class="tab-content" id="tab-timeline">
+        <div class="timeline-wrap">
+          <!-- PACING VISUALIZER CHART -->
+          <div class="pacing-visualizer-box">
+            <div class="visualizer-title">📈 Classic Western Narrative Pacing Monitor</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size: 8px; color: var(--muted); margin-bottom: 8px;">
+              Rhythm Waveform: Established / Slow $\rightarrow$ Tension $\rightarrow$ Calm $\rightarrow$ Explosive Action $\rightarrow$ Aftermath / Slow Hold
+            </div>
+            <div id="pacingChartContainer" style="width: 100%; height: 120px; background: rgba(0,0,0,0.3); border-radius: 4px; display: flex; align-items: flex-end; padding: 10px; gap: 8px;">
+              <!-- Drawn by JS -->
+              <div style="flex:1; display:flex; align-items:center; justify-content:center; height:100%; color: var(--muted); font-size: 9px;">Load scenes to draw pacing wave map</div>
+            </div>
+          </div>
+
+          <div class="tl-track" id="tlTrack">
+            <div class="empty-state">
+              <div class="empty-icon">⏱️</div>
+              <div class="empty-msg">Configure and generate scenes to map your timeline sequence</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="chat-panel">
+      <div class="chat-hdr">
+        <div class="chat-dot"></div>
+        <div class="chat-title">DIRECTOR</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--muted);margin-left:auto;">AI CINEMATOGRAPHER</div>
+      </div>
+      <div class="chat-msgs" id="chatMsgs">
+        <div class="msg msg-director">
+          <div class="msg-label">Director</div>
+          Greetings, partner. I am **Director**, your AI Cinematographer.<br><br>
+          We've introduced our **Shot Grammar Engine**, **Character Continuity Layer**, and **Western Narrative Pacing Rules** to bring absolute cinematic discipline to your batch creations!
+        </div>
+      </div>
+      <div class="chat-inp-wrap">
+        <textarea class="chat-inp" id="chatInp" placeholder="Ask Cinematic Assistant anything..." onkeydown="handleKey(event)"></textarea>
+        <button class="chat-send" onclick="sendChat()">→</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── CHARACTER CONTINUITY ROSTER (WITH DYNAMIC LOAD BALANCED VOICE ASSIGNMENTS) ──
+    const CHARACTERS = {
+      herbert: { name: "Herbert", role: "Sheriff", desc: "elderly grizzled sheriff, worn silver star badge, deeply weathered face, thick white mustache, rugged brown leather vest, tired but keen grey eyes", voiceProvider: "fal-kokoro", voiceId: "am_adam" },
+      harbaugh: { name: "Harbaugh", role: "stoic gunslinger", desc: "stoic gunslinger, weathered black wide-brimmed Stetson hat, eyepatch over left eye, dark worn duster coat, salt-and-pepper stubble, intense gaze", voiceProvider: "elevenlabs", voiceId: "21m00Tcm4TlvDq8ikWAM" },
+      mcdaniel: { name: "McDaniel", role: "saloon keeper", desc: "cunning saloon keeper, slick black hair, prominent gold tooth, fancy red velvet waistcoat, thin sharp mustache, scheming dark eyes", voiceProvider: "neets", voiceId: "us-male-1" },
+      james: { name: "James", role: "young outlaw", desc: "young ambitious outlaw, freckled sun-burned face, blue bandanna around neck, messy brown hair, faded denim shirt, nervous twitchy posture", voiceProvider: "fal-kokoro", voiceId: "am_michael" },
+      mack: { name: "Mack", role: "blacksmith", desc: "hulking blacksmith, massive bushy beard, soot-smeared face, heavy leather smith apron, massive muscled arms, rough calloused hands", voiceProvider: "fal-kokoro", voiceId: "bm_george" },
+      tuli: { name: "Tuli", role: "native tracker", desc: "brave native tracker, long braided black hair, weather-beaten bronze face, keen dark eyes, fringe deer-skin jacket with intricate red beadwork", voiceProvider: "fal-kokoro", voiceId: "bf_alice" }
+    };
+
+    // ── SHOT GRAMMAR LIBRARY ─────────────────────────────────────────
+    const SHOT_GRAMMAR_RULES = [
+      { keywords: ["look", "stare", "eye", "face", "watch", "see", "gaze", "whisper", "studying"], term: "lantern close-up", details: "lantern close-up shot, intense dramatic lighting, flickering warm yellow lantern flame reflecting in eyes, high contrast, heavy low-key shadows" },
+      { keywords: ["shadow", "saloon", "room", "indoor", "dark", "tavern", "inside", "door"], term: "saloon shadows", details: "saloon shadows cinematography, high-contrast chiaroscuro lighting, deep silhouetted forms, shafts of sunlight slicing through dusty wood blinds, high smoke atmosphere" },
+      { keywords: ["fire", "camp", "night", "dark", "evening", "silhouette", "campfire"], term: "firelight silhouette", details: "firelight silhouette shot, crackling campfire glowing amber in the center, characters rendered in deep dark rim-lit silhouettes against orange embers, sparks floating in night sky" },
+      { keywords: ["land", "desert", "horizon", "sky", "canyon", "ridge", "vista", "mountain", "valley", "wide"], term: "ridge wide", details: "ridge wide shot, epic grand scale, dramatic high-angle vista, sprawling dusty desert canyon, sweeping orange sunset skies, tiny silhouetted characters on distant ridge" },
+      { keywords: ["horse", "cart", "carriage", "running", "chase", "ride", "gallop", "fast", "train", "track"], term: "train tracking shot", details: "train tracking shot style, fast tracking camera moving alongside, low-angle dynamic panning, whipping scenery, ground shaking dust, high kinetic energy, motion blur" },
+      { keywords: ["approach", "slow", "steady", "walk", "stalk", "creep", "step"], term: "dolly-in", details: "dolly-in camera movement, slow smooth tracking shot pushing forward, tightening frame on subject, creating high claustrophobic suspense, narrow field of view" },
+      { keywords: ["above", "soar", "high", "aerial", "skyline", "epic", "overview"], term: "crane shot", details: "sweeping crane shot, camera soaring high above, tilting down as it rises, revealing the scale of the dusty wooden Western town main street, majestic cinematic scale" }
+    ];
+
+    // ── STATE ─────────────────────────────────────────────────────────
+    let scenes = [];
+    let apiKey = '';
+    let provider = 'openrouter';
+    let videoApiKey = '';
+    let videoSecretKey = ''; // Holds Kling SK
+    let videoProvider = 'fal-ai';
+    let hasProxyBackend = false;
+    let apiBase = ''; 
+    let activeBatchWorkers = [];
+    let stopBatchRequested = false;
+
+    // ── LLM PROVIDERS LIST (WITH NEW OPENAI GPT-OSS MODELS) ────────────
+    const PROVIDERS = {
+      groq: {
+        name: 'Groq',
+        ph: 'gsk_...',
+        models: [
+          { id: 'openai/gpt-oss-120b', label: 'GPT OSS 120B — Bigger & Cheaper (500 T/S)' },
+          { id: 'openai/gpt-oss-20b', label: 'GPT OSS 20B — Hyper-Fast (1000 T/S)' },
+          { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B' },
+          { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B Instant' }
+        ]
+      },
+      openrouter: {
+        name: 'OpenRouter',
+        ph: 'sk-or-v1-...',
+        models: [
+          { id: 'openai/gpt-oss-120b', label: 'GPT OSS 120B' },
+          { id: 'openai/gpt-oss-20b', label: 'GPT OSS 20B' },
+          { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Llama 3.3 70B — Free' },
+          { id: 'deepseek/deepseek-r1:free', label: 'DeepSeek R1 — Free' },
+          { id: 'qwen/qwen-2.5-72b-instruct:free', label: 'Qwen 2.5 72B' },
+          { id: 'google/gemini-flash-1.5', label: 'Gemini Flash 1.5' },
+          { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet' }
+        ]
+      },
+      openai: {
+        name: 'OpenAI',
+        ph: 'sk-...',
+        models: [
+          { id: 'openai/gpt-oss-120b', label: 'GPT OSS 120B' },
+          { id: 'openai/gpt-oss-20b', label: 'GPT OSS 20B' },
+          { id: 'gpt-4o', label: 'GPT-4o' },
+          { id: 'gpt-4o-mini', label: 'GPT-4o Mini' }
+        ]
+      },
+      anthropic: {
+        name: 'Anthropic',
+        ph: 'sk-ant-...',
+        models: [
+          { id: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
+          { id: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' }
+        ]
+      },
+      gemini: {
+        name: 'Google Gemini',
+        ph: 'AIza...',
+        models: [
+          { id: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+          { id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+          { id: 'gemini-2.0-flash-exp', label: 'Gemini 2.0 Flash' }
+        ]
+      },
+      deepseek: {
+        name: 'DeepSeek',
+        ph: 'sk-...',
+        models: [
+          { id: 'deepseek-chat', label: 'DeepSeek V3' },
+          { id: 'deepseek-reasoner', label: 'DeepSeek R1' }
+        ]
+      },
+      xai: {
+        name: 'xAI Grok',
+        ph: 'xai-...',
+        models: [
+          { id: 'grok-beta', label: 'Grok Beta' }
+        ]
+      },
+      mistral: {
+        name: 'Mistral',
+        ph: '...',
+        models: [
+          { id: 'mistral-small-latest', label: 'Mistral Small' },
+          { id: 'mistral-large-latest', label: 'Mistral Large' }
+        ]
+      }
+    };
+
+    // ── VIDEO GENERATION API PROVIDERS ──────────────────────────────
+    const VIDEO_PROVIDERS = {
+      'fal-ai': {
+        name: 'Fal.ai (Unified Engine)',
+        ph: 'Key-xxxx-yyyy...',
+        models: [
+          { id: 'fal-ai/kling-video/v1.6/standard/text-to-video', label: 'Kling 1.6 Standard' },
+          { id: 'fal-ai/kling-video/v1.6/pro/text-to-video', label: 'Kling 1.6 Pro (Cinematic)' },
+          { id: 'fal-ai/hunyuan-avatar', label: 'Hunyuan Avatar (Talking Head / Speaker)' },
+          { id: 'fal-ai/luma-dream-machine', label: 'Luma Dream Machine' },
+          { id: 'fal-ai/hunyuan-video', label: 'Hunyuan Video (Fast Open Source)' },
+          { id: 'fal-ai/ltx-video', label: 'LTX Video (Ultra-Fast & Cheap)' },
+          { id: 'fal-ai/minimax/video-01', label: 'MiniMax Video-01' },
+          { id: 'fal-ai/veo3', label: 'Google Veo 3' },
+          { id: 'fal-ai/wan/v2.1/14b/text-to-video', label: 'Wan 2.1 14B (High Motion)' },
+          { id: 'custom', label: '(Custom Fal.ai model path...)' }
+        ]
+      },
+      'replicate': {
+        name: 'Replicate',
+        ph: 'r8_xxxx-yyyy...',
+        models: [
+          { id: 'kling-ai/kling-video-v1.5-standard', label: 'Kling 1.5 Standard' },
+          { id: 'tencent/hunyuan-video', label: 'Hunyuan Video' },
+          { id: 'fofr/wan-2.1', label: 'Wan 2.1' },
+          { id: 'luma/dream-machine', label: 'Luma Dream Machine' },
+          { id: 'custom', label: '(Custom Replicate model path...)' }
+        ]
+      }
+    };
+
+    const PLATFORMS = {
+      hunyuanavatar: { name: 'Hunyuan Avatar', color: '#10b981', icon: '👤', free: true, url: 'https://hunyuanvideo-avatar.github.io/' },
+      kling: { name: 'Kling AI', color: '#a855f7', icon: '🎬', free: true, url: 'https://klingai.com' },
+      pika: { name: 'Pika', color: '#f97316', icon: '⚡', free: true, url: 'https://pika.art' },
+      hailuo: { name: 'HaiLuo AI', color: '#22c55e', icon: '👤', free: true, url: 'https://hailuoai.video' },
+      googlevids: { name: 'Google Vids', color: '#3b82f6', icon: '🔵', free: true, url: 'https://vids.google.com' },
+      invideo: { name: 'InVideo AI', color: '#f59e0b', icon: '📹', free: true, url: 'https://invideo.io' },
+      runway: { name: 'Runway', color: '#ef4444', icon: '🚀', free: false, url: 'https://runwayml.com' },
+      heygen: { name: 'HeyGen', color: '#ec4899', icon: '🗣️', free: false, url: 'https://www.heygen.com' },
+      synthesia: { name: 'Synthesia', color: '#8b5cf6', icon: '🤖', free: false, url: 'https://www.synthesia.io' },
+    };
+
+    const PLATFORM_GUIDANCE = {
+      hunyuanavatar: 'Hunyuan Avatar: hyper-realistic talking avatar driven by audio. Paste custom Avatar Character Image URL and Speech Voiceover Audio URL to drive hyper-real face expressions and lip movements!',
+      kling: 'Kling: use motion descriptors (slow zoom, camera pan left), lighting details (golden hour, neon glow), cinematic keywords. Avoid text overlays. Max 10s.',
+      pika: 'Pika: stylized visual descriptions, effect keywords (glitch, particles, bloom), dynamic motion direction. Keep under 4s for best results.',
+      hailuo: 'HaiLuo: focus on human subjects — facial expressions, body language, emotional state, skin detail, natural movement, face lighting. Very strong on close-ups.',
+      googlevids: 'Google Vids/Veo: cinematic scale, landscape establishing shots, wide angles, epic scope. Highest quality — use for hero shots only. Very responsive to cinematography language.',
+      invideo: 'InVideo: describe as a full video brief — topic, visual style needed, stock footage direction, voiceover tone, background music mood, pacing.',
+      runway: 'Runway Gen-4: pipe-separated keywords work best — subject | action | style | camera movement | lighting | quality tier. Technical cinematography terms get excellent results.',
+      heygen: 'HeyGen: provide exact avatar script in quotes. Then specify: avatar style, background setting, delivery tone. This is talking-head only — write dialogue, not visual description.',
+      synthesia: 'Synthesia: provide exact script text for avatar to speak. Natural conversational sentences. Specify avatar and background separately in the Synthesia UI after pasting.',
+    };
+
+    const AVATAR_PRESETS = [
+      { name: "Sheriff Herbert", img: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=512&auto=format&fit=crop&q=80", audio: "https://samplelib.com/lib/preview/mp3/sample-9s.mp3" },
+      { name: "Stoic Harbaugh", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=512&auto=format&fit=crop&q=80", audio: "https://samplelib.com/lib/preview/mp3/sample-3s.mp3" },
+      { name: "Outlaw James", img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=512&auto=format&fit=crop&q=80", audio: "https://samplelib.com/lib/preview/mp3/sample-9s.mp3" }
+    ];
+
+    // ── CHECK BACKEND ─────────────────────────────────────────────────
+    async function checkBackend() {
+      try {
+        const res = await fetch('/api/health');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'ok') {
+            hasProxyBackend = true;
+            apiBase = '';
+            console.log('✅ Connected to relative proxy server');
+            return;
+          }
+        }
+      } catch (err) {}
+
+      try {
+        const res = await fetch('http://localhost:3000/api/health');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'ok') {
+            hasProxyBackend = true;
+            apiBase = 'http://localhost:3000';
+            console.log('✅ Connected to localhost:3000 proxy server');
+            return;
+          }
+        }
+      } catch (err) {}
+
+      console.log('ℹ️ Running in standalone static client mode');
+    }
+
+    // ── PROVIDERS SETUP ───────────────────────────────────────────────
+    function updateProviderModels() {
+      provider = document.getElementById('providerSelect').value;
+      const sel = document.getElementById('modelSelect');
+      const models = PROVIDERS[provider].models;
+      sel.innerHTML = models.map(m => `<option value="${m.id}">${m.label}</option>`).join('');
+      document.getElementById('apiKeyInput').placeholder = PROVIDERS[provider].ph || 'Paste API key';
+      
+      const saved = localStorage.getItem('twain_dir_key_' + provider);
+      if (saved) {
+        document.getElementById('apiKeyInput').value = saved;
+        apiKey = saved;
+        setStatus(true);
+      } else {
+        document.getElementById('apiKeyInput').value = '';
+        apiKey = '';
+        setStatus(false);
+      }
+    }
+
+    function saveApiKey() {
+      const k = document.getElementById('apiKeyInput').value.trim();
+      if (!k) {
+        alert('Paste your LLM API key first.');
+        return;
+      }
+      apiKey = k;
+      localStorage.setItem('twain_dir_key_' + provider, k);
+      setStatus(true);
+      addMsg('director', '✅ LLM Key saved safely in your browser.');
+    }
+
+    function setStatus(on) {
+      const el = document.getElementById('apiStatus');
+      el.className = 'api-status ' + (on ? 'on' : 'off');
+      el.textContent = on ? '● Connected' : 'No Key';
+    }
+
+    // ── VIDEO GENERATION API SETUP ─────────────────────────────────────
+    function updateVideoModels() {
+      videoProvider = document.getElementById('videoProviderSelect').value;
+      const sel = document.getElementById('videoModelSelect');
+      
+      if (videoProvider === 'kling-direct') {
+        document.getElementById('videoKeyLabel').textContent = 'Access Key';
+        document.getElementById('videoApiKeyInput').placeholder = 'Kling Access Key (AK)';
+        document.getElementById('klingSkLabel').style.display = 'inline-block';
+        document.getElementById('klingSecretKeyInput').style.display = 'inline-block';
+        
+        sel.innerHTML = `
+          <option value="kling-v2-6">Kling 2.6 (Pro / Cinematic)</option>
+          <option value="kling-v2">Kling 2.0 (High Consistency)</option>
+          <option value="kling-v1">Kling 1.0 (Standard)</option>
+          <option value="custom">Custom model path...</option>
+        `;
+        
+        const savedAk = localStorage.getItem('twain_video_key_kling-direct_ak') || '';
+        const savedSk = localStorage.getItem('twain_video_key_kling-direct_sk') || '';
+        document.getElementById('videoApiKeyInput').value = savedAk;
+        document.getElementById('klingSecretKeyInput').value = savedSk;
+        videoApiKey = savedAk;
+        videoSecretKey = savedSk;
+        setVideoStatus(savedAk && savedSk);
+      } else {
+        document.getElementById('videoKeyLabel').textContent = 'Video Key';
+        document.getElementById('klingSkLabel').style.display = 'none';
+        document.getElementById('klingSecretKeyInput').style.display = 'none';
+        
+        const models = VIDEO_PROVIDERS[videoProvider].models;
+        sel.innerHTML = models.map(m => `<option value="${m.id}">${m.label}</option>`).join('');
+        document.getElementById('videoApiKeyInput').placeholder = VIDEO_PROVIDERS[videoProvider].ph || 'Paste API key';
+
+        const saved = localStorage.getItem('twain_video_key_' + videoProvider);
+        if (saved) {
+          document.getElementById('videoApiKeyInput').value = saved;
+          videoApiKey = saved;
+          setVideoStatus(true);
+        } else {
+          document.getElementById('videoApiKeyInput').value = '';
+          videoApiKey = '';
+          setVideoStatus(false);
+        }
+      }
+      checkCustomModel();
+    }
+
+    function saveVideoApiKey() {
+      if (videoProvider === 'kling-direct') {
+        const ak = document.getElementById('videoApiKeyInput').value.trim();
+        const sk = document.getElementById('klingSecretKeyInput').value.trim();
+        if (!ak || !sk) {
+          alert('Both Kling Access Key (AK) and Secret Key (SK) are required.');
+          return;
+        }
+        videoApiKey = ak;
+        videoSecretKey = sk;
+        localStorage.setItem('twain_video_key_kling-direct_ak', ak);
+        localStorage.setItem('twain_video_key_kling-direct_sk', sk);
+        setVideoStatus(true);
+        addMsg('director', '✅ Kling Direct Developer Keys saved successfully. Connected to official API.');
+      } else {
+        const k = document.getElementById('videoApiKeyInput').value.trim();
+        if (!k) {
+          alert('Paste your Video API key first.');
+          return;
+        }
+        videoApiKey = k;
+        localStorage.setItem('twain_video_key_' + videoProvider, k);
+        setVideoStatus(true);
+        addMsg('director', '✅ Video Key saved safely. Ready to render.');
+      }
+    }
+
+    function setVideoStatus(on) {
+      const el = document.getElementById('videoApiStatus');
+      el.className = 'api-status ' + (on ? 'on' : 'off');
+      el.textContent = on ? '● Connected' : 'No Key';
+    }
+
+    function checkCustomModel() {
+      const modelVal = document.getElementById('videoModelSelect').value;
+      const customInp = document.getElementById('customModelInput');
+      if (modelVal === 'custom') {
+        customInp.style.display = 'block';
+      } else {
+        customInp.style.display = 'none';
+      }
+    }
+
+    function getSelectedVideoModel() {
+      const modelVal = document.getElementById('videoModelSelect').value;
+      if (modelVal === 'custom') {
+        return document.getElementById('customModelInput').value.trim();
+      }
+      return modelVal;
+    }
+
+    // ── RENDERING THE ROSTER ON THE LEFT (WITH VOICES) ─────────────────
+    function renderRoster() {
+      const container = document.getElementById('characterRosterContainer');
+      if (!container) return;
+      container.innerHTML = Object.values(CHARACTERS).map(c => `
+        <div class="char-card">
+          <div class="char-header">
+            <span class="char-name">${c.name}</span>
+            <span class="char-tag">${c.role}</span>
+          </div>
+          <div class="char-desc">${c.desc}</div>
+          <div style="margin-top:4px; display:flex; flex-direction:column; gap:3px;">
+            <div style="font-size:7px; font-family:'JetBrains Mono'; color:var(--muted); text-transform:uppercase;">Voice Provider</div>
+            <select class="char-voice-select" onchange="updateCharVoice('${c.name.toLowerCase()}', 'provider', this.value)">
+              <option value="fal-kokoro" ${c.voiceProvider === 'fal-kokoro' ? 'selected' : ''}>Fal Kokoro (Free & Cheap)</option>
+              <option value="elevenlabs" ${c.voiceProvider === 'elevenlabs' ? 'selected' : ''}>ElevenLabs (Premium Cinematic)</option>
+              <option value="neets" ${c.voiceProvider === 'neets' ? 'selected' : ''}>Neets.ai (Budget Fast)</option>
+            </select>
+            <div style="font-size:7px; font-family:'JetBrains Mono'; color:var(--muted); text-transform:uppercase; margin-top:2px;">Voice ID / Preset</div>
+            <input class="char-voice-input" type="text" value="${c.voiceId}" onchange="updateCharVoice('${c.name.toLowerCase()}', 'voiceId', this.value)" placeholder="e.g. am_adam or 21m00Tcm4TlvDq...">
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function updateCharVoice(charKey, prop, val) {
+      if (CHARACTERS[charKey]) {
+        CHARACTERS[charKey][prop] = val;
+        console.log(`Updated ${charKey} ${prop} to ${val}`);
+      }
+    }
+
+    // ── SHOT GRAMMAR & PACING CALCULATIONS ────────────────────────────
+    function applyShotGrammar(desc, index, total) {
+      const text = desc.toLowerCase();
+      for (const rule of SHOT_GRAMMAR_RULES) {
+        if (rule.keywords.some(k => text.includes(k))) {
+          return { term: rule.term, desc: rule.details };
+        }
+      }
+      if (index === 0) return { term: "crane shot", desc: SHOT_GRAMMAR_RULES[6].details };
+      if (index === total - 1) return { term: "dolly-in", desc: SHOT_GRAMMAR_RULES[5].details };
+      return { term: "saloon shadows", desc: SHOT_GRAMMAR_RULES[1].details };
+    }
+
+    function calculateWesternPacing(index, total) {
+      const pct = index / (total - 1 || 1);
+      if (pct <= 0.20) {
+        return { 
+          phase: "Establishing (Slow)", 
+          value: 15, 
+          duration: 6, 
+          promptAdd: "very slow camera glide, static long hold, peaceful dust particles blowing, serene atmospheric atmosphere" 
+        };
+      } else if (pct <= 0.50) {
+        return { 
+          phase: "Suspense (Tension)", 
+          value: 55, 
+          duration: 4, 
+          promptAdd: "ticking high tension, sweating faces, slow macro pan on holsters, highly cinematic chiascuro shadow play" 
+        };
+      } else if (pct <= 0.65) {
+        return { 
+          phase: "Calm Hold (Slow)", 
+          value: 25, 
+          duration: 5, 
+          promptAdd: "extreme close-up on eye twitch, finger near revolver gun, absolute silent hold, freezing breeze, dramatic wind" 
+        };
+      } else if (pct <= 0.85) {
+        return { 
+          phase: "Action (Explosion)", 
+          value: 95, 
+          duration: 3, 
+          promptAdd: "rapid explosive action, high kinetic movement, guns blazing, flying dirt, chaotic shaky camera panning, smoke blowout" 
+        };
+      } else {
+        return { 
+          phase: "Aftermath (Slow)", 
+          value: 10, 
+          duration: 5, 
+          promptAdd: "melancholic aftermath, drifting smoke, wide panoramic slow zoom-out, lonely wind howling through broken boards" 
+        };
+      }
+    }
+
+    function applyCharacterContinuity(desc) {
+      let finalDesc = desc;
+      const detected = [];
+      Object.keys(CHARACTERS).forEach(key => {
+        const regex = new RegExp(`\\b${key}\\b`, 'gi');
+        if (regex.test(desc)) {
+          detected.push(CHARACTERS[key].name);
+          finalDesc = finalDesc.replace(regex, `${CHARACTERS[key].name} (${CHARACTERS[key].desc})`);
+        }
+      });
+      return { text: finalDesc, detected };
+    }
+
+    // ── PARSER LOGIC FOR THE BATCH UPLOADER ───────────────────────────
+    function parsePastedScenes(text) {
+      text = text.trim();
+      let rawScenes = [];
+
+      if (text.startsWith('[') && text.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(text);
+          if (Array.isArray(parsed)) {
+            rawScenes = parsed.map((s, idx) => ({
+              num: s.num || (idx + 1),
+              type: s.type || 'General',
+              desc: s.desc || s.visual || s.description || 'No description provided',
+              voiceover: s.voiceover || s.vo || '',
+              duration: s.duration || s.length || 4,
+              mood: s.mood || 'Cinematic',
+              shotType: s.shotType || 'Medium',
+              platform: s.platform || 'kling'
+            }));
+          }
+        } catch (e) {
+          console.log("JSON parse fallback", e);
+        }
+      }
+
+      if (rawScenes.length === 0) {
+        const sceneBlocks = text.split(/(?=\[SCENE|(?:\bScene\s+\d+))/gi);
+        let sceneNum = 1;
+
+        sceneBlocks.forEach(block => {
+          if (!block.trim()) return;
+          
+          let type = 'General';
+          let duration = 4;
+          
+          const headerMatch = block.match(/(?:\[?SCENE\s+(\d+)\s*[-:]?\s*([A-Za-z0-9\s/]+)?\s*[-:]?\s*(\d+)s?\]?)/i) || 
+                              block.match(/(?:Scene\s+(\d+)\s*[-:]?\s*([A-Za-z0-9\s/]+)?\s*[-:]?\s*(\d+)s?)/i);
+          
+          let num = sceneNum;
+          if (headerMatch) {
+            num = parseInt(headerMatch[1]) || sceneNum;
+            if (headerMatch[2]) type = headerMatch[2].trim();
+            if (headerMatch[3]) duration = parseInt(headerMatch[3]) || 4;
+          }
+          
+          let desc = '';
+          const visualMatch = block.match(/VISUAL\s*:\s*([\s\S]*?)(?=VOICEOVER|VO|DIRECTION|Mood|Shot|$)/i) ||
+                              block.match(/Visual\s+Description\s*:\s*([\s\S]*?)(?=Voiceover|Direction|$)/i) ||
+                              block.match(/Description\s*:\s*([\s\S]*?)(?=Voiceover|Direction|$)/i);
+          if (visualMatch) {
+            desc = visualMatch[1].trim();
+          } else {
+            const lines = block.split('\n').filter(l => !l.includes('[SCENE') && !l.includes('VOICEOVER:') && !l.includes('DIRECTION:'));
+            desc = lines.join(' ').trim();
+          }
+          
+          let voiceover = '';
+          const voMatch = block.match(/(?:VOICEOVER|VO)\s*:\s*([\s\S]*?)(?=DIRECTION|Mood|Shot|Visual|$)/i) ||
+                          block.match(/Voiceover\s*:\s*([\s\S]*?)(?=Direction|$)/i);
+          if (voMatch) {
+            voiceover = voMatch[1].trim();
+            if (voiceover.toUpperCase() === 'NONE' || voiceover.toUpperCase() === 'SILENT') {
+              voiceover = '';
+            }
+          }
+          
+          if (desc) {
+            rawScenes.push({
+              num: num,
+              type: type,
+              desc: desc,
+              voiceover: voiceover,
+              duration: duration,
+              mood: block.match(/mood\s*:\s*([A-Za-z]+)/i)?.[1] || 'Cinematic',
+              shotType: block.match(/shot\s*:\s*([A-Za-z]+)/i)?.[1] || 'Medium',
+              platform: 'kling'
+            });
+            sceneNum++;
+          }
+        });
+      }
+
+      const totalCount = rawScenes.length;
+      return rawScenes.map((s, idx) => {
+        const pacing = calculateWesternPacing(idx, totalCount);
+        const shotGrammar = applyShotGrammar(s.desc, idx, totalCount);
+        const continuity = applyCharacterContinuity(s.desc);
+        const routed = routeScene(s);
+        const finalPromptText = `${continuity.text}. ${shotGrammar.desc}. ${pacing.promptAdd}. highly realistic Western style, historical accuracy, cinematic colors.`;
+
+        // Attempt to auto detect speaking character based on name inside voiceover text (e.g. "Herbert: Stop there outlaw")
+        let speakingChar = "";
+        let cleanVoText = s.voiceover;
+        
+        Object.keys(CHARACTERS).forEach(key => {
+          const charName = CHARACTERS[key].name;
+          const prefixRegex = new RegExp(`^\\s*${charName}\\s*:\\s*`, "i");
+          if (prefixRegex.test(s.voiceover)) {
+            speakingChar = key;
+            cleanVoText = s.voiceover.replace(prefixRegex, "").trim().replace(/^["']|["']$/g, "");
+          }
+        });
+
+        // Fallback to first detected character in visual description if no explicit prefix is present
+        if (!speakingChar && continuity.detected.length > 0) {
+          speakingChar = continuity.detected[0].toLowerCase();
+        }
+
+        return {
+          num: s.num,
+          type: s.type,
+          desc: s.desc,
+          voiceover: s.voiceover,
+          cleanVoiceover: cleanVoText,
+          speakingCharacter: speakingChar,
+          duration: pacing.duration, 
+          mood: s.mood,
+          shotType: s.shotType,
+          platform: s.platform || routed.platform,
+          routingReason: routed.reason,
+          
+          pacingPhase: pacing.phase,
+          pacingValue: pacing.value,
+          shotGrammarTerm: shotGrammar.term,
+          detectedCharacters: continuity.detected,
+          
+          generatedPrompt: finalPromptText,
+          videoStatus: 'IDLE',
+          videoLogs: [],
+          videoUrl: null,
+          avatarImageUrl: s.avatarImageUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=512&auto=format&fit=crop&q=80',
+          speechAudioUrl: s.speechAudioUrl || null, // Blank by default, generated during queue
+          requestId: null,
+          statusUrl: null
+        };
+      });
+    }
+
+    // ── DRAG & DROP & UPLOAD EVENT HANDLERS ───────────────────────────
+    function triggerParseAndLoad() {
+      const txt = document.getElementById('scenePasteArea').value;
+      if (!txt.trim()) {
+        alert("Please paste scene script text or drag in a file first.");
+        return;
+      }
+      
+      const parsed = parsePastedScenes(txt);
+      if (parsed.length === 0) {
+        alert("We couldn't detect any scenes. Ensure your script has [SCENE N] blocks or standard JSON syntax.");
+        return;
+      }
+
+      scenes = parsed;
+      document.getElementById('scriptStats').textContent = `${scenes.length} scenes parsed successfully!`;
+      document.getElementById('sceneCount').textContent = `${scenes.length} scenes loaded`;
+      
+      renderScenes();
+      buildBoard();
+      renderTimeline();
+      drawPacingCurve();
+      
+      addMsg('director', `🔮 **Western Cinematic Parser Completed!**\n\nDetected characters: **${[...new Set(scenes.flatMap(s=>s.detectedCharacters))].join(', ') || 'None'}**.\nShot Grammar mapped **${scenes.length} unique custom angles** across Establish, Tension, Calm hold, Action and Aftermath states. Parallel batch dashboard is primed.`);
+      switchTab('router', document.querySelectorAll('.tab-btn')[1]);
+    }
+
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (file) processSelectedFile(file);
+    }
+
+    function processSelectedFile(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('scenePasteArea').value = e.target.result;
+        triggerParseAndLoad();
+      };
+      reader.readAsText(file);
+    }
+
+    function clearPasteArea() {
+      document.getElementById('scenePasteArea').value = '';
+      document.getElementById('scriptStats').textContent = '0 scenes parsed and ready to queue';
+      scenes = [];
+      renderScenes();
+      buildBoard();
+      renderTimeline();
+    }
+
+    const dropZone = document.getElementById('dropZone');
+    if (dropZone) {
+      dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+      });
+      dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+      });
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          processSelectedFile(files[0]);
+        }
+      });
+    }
+
+    // ── GLOBAL OVERRIDES & BATCH RUNNER ───────────────────────────────
+    function applyGlobalModelOverride(val) {
+      if (!val) return;
+      scenes.forEach(s => {
+        if (s.platform !== 'hunyuanavatar') { 
+          s.routingReason = `Forced globally to ${val.split('/').pop()}`;
+        }
+      });
+      renderScenes();
+      buildBoard();
+      renderTimeline();
+    }
+
+    // ── RENDER CONTROLLER DASHBOARD ───────────────────────────────────
+    function renderScenes() {
+      const c = document.getElementById('sceneContainer');
+      const empty = document.getElementById('routerEmpty');
+      if (scenes.length === 0) {
+        empty.style.display = 'flex';
+        return;
+      }
+      empty.style.display = 'none';
+      c.innerHTML = '';
+      c.appendChild(empty);
+
+      scenes.forEach((scene, i) => {
+        const p = PLATFORMS[scene.platform] || PLATFORMS.kling;
+        const div = document.createElement('div');
+        div.className = 'scene-block';
+        div.style.setProperty('--pc', p.color);
+        
+        let customInputsHtml = '';
+        if (scene.platform === 'hunyuanavatar' || scene.platform === 'heygen' || scene.platform === 'synthesia') {
+          // Display character's assigned load-balanced voice configuration info
+          const speakingCharObj = CHARACTERS[scene.speakingCharacter];
+          let voiceInfoText = speakingCharObj ? 
+            `Driving speaker character: **${speakingCharObj.name}** via **${speakingCharObj.voiceProvider}** [Preset: ${speakingCharObj.voiceId}]` : 
+            `Driving voice: **Default Voice** (Fal Kokoro: am_adam)`;
+
+          customInputsHtml = `
+            <div class="avatar-inputs-box">
+              <div class="avatar-input-title">🗣️ Hunyuan Avatar Speaker Setup (Load Balanced)</div>
+              <div style="font-size: 8.5px; font-family:'JetBrains Mono'; color:var(--muted); margin-bottom: 4px;">
+                ${voiceInfoText}
+              </div>
+              <div class="avatar-row">
+                <label>Face Image</label>
+                <input type="text" id="avatar-img-${i}" value="${scene.avatarImageUrl || ''}" onchange="scenes[${i}].avatarImageUrl=this.value" placeholder="HTTPS image URL of the face">
+              </div>
+              <div class="avatar-row">
+                <label>Speech Audio</label>
+                <input type="text" id="speech-audio-${i}" value="${scene.speechAudioUrl || ''}" onchange="scenes[${i}].speechAudioUrl=this.value" placeholder="Auto-generated on launch, or paste custom audio URL">
+              </div>
+              ${scene.speechAudioUrl ? `
+                <div style="margin-top: 4px;">
+                  <audio src="${scene.speechAudioUrl}" controls style="width: 100%; height: 24px; border-radius: 2px;"></audio>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }
+
+        let videoUIHtml = '';
+        if (scene.videoStatus !== 'IDLE') {
+          videoUIHtml = `
+            <div class="video-preview-box">
+              ${scene.videoStatus === 'SUCCESS' && scene.videoUrl ? 
+                `<video src="${scene.videoUrl}" controls></video>` : ''
+              }
+              ${scene.videoStatus !== 'SUCCESS' ? `
+                <div class="video-status-overlay">
+                  ${scene.videoStatus === 'FAILED' ? `
+                    <div style="color: var(--red); font-size: 16px;">❌ Generation Failed</div>
+                    <div class="video-status-text" style="color: var(--red); max-width: 90%;">${scene.videoError || 'Unknown Error'}</div>
+                  ` : `
+                    <div class="video-spinner"></div>
+                    <div class="video-status-text">${scene.videoStatus}...</div>
+                  `}
+                  ${scene.videoLogs.length > 0 ? `
+                    <div class="video-logs-box">
+                      ${scene.videoLogs.map(l => `<div>[LOG] ${l.message || l}</div>`).join('')}
+                    </div>
+                  ` : ''}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }
+
+        const continuityPills = scene.detectedCharacters.map(char => `<span class="meta-pill char">👤 ${char}</span>`).join('');
+        const grammarPill = `<span class="meta-pill shot">🎬 Grammar: ${scene.shotGrammarTerm}</span>`;
+        const pacingPill = `<span class="meta-pill pacing">⚡ Rhythm: ${scene.pacingPhase}</span>`;
+
+        div.innerHTML = `
+          <div class="scene-hdr">
+            <div class="scene-num">${scene.num}</div>
+            <div class="scene-type">${scene.type}</div>
+            <div class="scene-dur">${scene.duration}s</div>
+          </div>
+          <div class="scene-body">
+            <div class="scene-desc">${scene.desc}</div>
+            ${scene.voiceover ? `<div class="scene-vo">Voiceover: "${scene.voiceover}"</div>` : ''}
+            
+            <div class="meta-pills-row">
+              ${grammarPill}
+              ${pacingPill}
+              ${continuityPills}
+            </div>
+
+            <div class="plat-row">
+              <div class="plat-badge" style="color:${p.color}; border-color:${p.color}44;">${p.icon} ${p.name}</div>
+              <div class="routing-reason">${scene.routingReason}</div>
+              ${p.free ? '<span class="cost-tag ct-free">✅ No card</span>' : '<span class="cost-tag ct-card">💳 Card req\'d</span>'}
+              <select class="reroute-sel" onchange="rerouteScene(${i},this.value)">
+                ${Object.entries(PLATFORMS).map(([k, v]) => `<option value="${k}" ${scene.platform === k ? 'selected' : ''}>${v.icon} ${v.name}</option>`).join('')}
+              </select>
+            </div>
+            
+            ${customInputsHtml}
+
+            <div class="prompt-out" id="po-${i}">${scene.generatedPrompt || ''}</div>
+            ${scene.generatedPrompt ? `<script>document.getElementById('po-${i}').classList.add('vis');</\script>` : ''}
+            
+            ${videoUIHtml}
+
+            <div class="scene-actions" style="margin-top: 5px;">
+              <button class="bs gen" onclick="generatePrompt(${i})">✦ View Prompt</button>
+              <button class="bs create-vid" onclick="createVideo(${i})">⚡ Generate Inline</button>
+              <button class="bs copy" onclick="copyPrompt(${i})">Copy Prompt</button>
+              <button class="bs open" onclick="window.open('${p.url}','_blank')">Open ${p.name} →</button>
+            </div>
+          </div>
+        `;
+        c.appendChild(div);
+      });
+
+      scenes.forEach((scene, i) => {
+        const el = document.getElementById('po-' + i);
+        if (scene.generatedPrompt && el) {
+          el.classList.add('vis');
+        }
+      });
+    }
+
+    function rerouteScene(i, platform) {
+      scenes[i].platform = platform;
+      scenes[i].routingReason = 'Manually reassigned';
+      renderScenes();
+      buildBoard();
+      renderTimeline();
+    }
+
+    // ── CONCURRENT BATCH TASK WORKER QUEUE ───────────────────────────
+    async function launchConcurrentBatch() {
+      if (scenes.length === 0) {
+        alert("Please load scenes first.");
+        return;
+      }
+      if (!videoApiKey) {
+        alert("Video API keys are required in the Video API Bar above to run generations!");
+        return;
+      }
+
+      stopBatchRequested = false;
+      const limit = parseInt(document.getElementById('concurrencySelect').value) || 2;
+      const queueList = scenes.filter(s => s.videoStatus === 'IDLE' || s.videoStatus === 'FAILED');
+
+      if (queueList.length === 0) {
+        addMsg('director', 'All loaded scenes are already generated or processing. Clear status or reload to rerun.');
+        return;
+      }
+
+      addMsg('director', `🚀 **Starting Concurrent Batch Generation Queue!** Concurrency Limit: **${limit}**. Rendering **${queueList.length} scenes** in parallel.`);
+      
+      let queueIdx = 0;
+      
+      async function worker() {
+        while (queueIdx < queueList.length) {
+          if (stopBatchRequested) {
+            console.log("Halt request intercepted.");
+            break;
+          }
+          const sceneToProcess = queueList[queueIdx++];
+          const sceneIdx = scenes.findIndex(s => s.num === sceneToProcess.num);
+          
+          if (sceneIdx !== -1) {
+            try {
+              await generateAndBlock(sceneIdx);
+            } catch(e) {
+              console.error(`Generation exception on Scene ${sceneToProcess.num}`, e);
+            }
+          }
+        }
+      }
+
+      const numWorkers = Math.min(limit, queueList.length);
+      const workers = [];
+      for (let w = 0; w < numWorkers; w++) {
+        workers.push(worker());
+      }
+
+      await Promise.all(workers);
+      if (stopBatchRequested) {
+        addMsg('director', '🛑 **Batch queue halted.** Remaining tasks were successfully paused.');
+      } else {
+        addMsg('director', '🎉 **Cinematic Batch Queue finished!** Go to the Storyboard Gallery to play your full sequence!');
+      }
+    }
+
+    function haltAllGenerations() {
+      stopBatchRequested = true;
+      scenes.forEach(s => {
+        if (s.videoStatus === 'SUBMITTING' || s.videoStatus === 'QUEUED' || s.videoStatus === 'GENERATING') {
+          s.videoStatus = 'FAILED';
+          s.videoError = 'Halted manually by batch controller';
+        }
+      });
+      renderScenes();
+      addMsg('director', '⚠️ Batch queue instructed to stop. Running generators are being cancelled.');
+    }
+
+    // ── PROMPT GENERATION ─────────────────────────────────────────────
+    async function generatePrompt(i) {
+      const el = document.getElementById('po-' + i);
+      if (el) {
+        el.classList.toggle('vis');
+      }
+    }
+
+    function copyPrompt(i) {
+      const scene = scenes[i];
+      const prompt = scene.generatedPrompt;
+      navigator.clipboard.writeText(prompt);
+      addMsg('director', `✅ Copied optimized prompt for Scene ${scene.num} (with Shot Grammar, pacing descriptors, and character continuity features!).`);
+    }
+
+    // ── VOICE SYNTHESIS DISPATCHER (CONCURRENT CREDITS PROTECTION) ───
+    async function synthesizeVoiceAudio(i) {
+      const scene = scenes[i];
+      const speakingCharObj = CHARACTERS[scene.speakingCharacter];
+      
+      const provider = speakingCharObj ? speakingCharObj.voiceProvider : "fal-kokoro";
+      const voiceId = speakingCharObj ? speakingCharObj.voiceId : "am_adam";
+      
+      // Select correct key based on provider
+      let voiceApiKey = videoApiKey; // default to fal key
+      if (provider === 'elevenlabs') {
+        // Look up saved ElevenLabs key
+        voiceApiKey = localStorage.getItem('twain_voice_key_elevenlabs') || videoApiKey;
+      } else if (provider === 'neets') {
+        voiceApiKey = localStorage.getItem('twain_voice_key_neets') || videoApiKey;
+      }
+
+      const postBody = {
+        provider: provider,
+        text: scene.cleanVoiceover || scene.voiceover,
+        voiceId: voiceId,
+        apiKey: voiceApiKey,
+        falApiKey: videoApiKey // Fal key used to host Eleven/Neets output files on CDN
+      };
+
+      try {
+        const res = await fetch(apiBase + '/api/voice/synthesize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(postBody)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Voice synthesis failed');
+        return data.audioUrl;
+      } catch (e) {
+        console.error("Voice synthesis failed, falling back to default Kokoro voice", e);
+        // Fallback to Fal Kokoro with default key
+        const fallbackRes = await fetch(apiBase + '/api/voice/synthesize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            provider: 'fal-kokoro',
+            text: scene.cleanVoiceover || scene.voiceover,
+            voiceId: 'am_adam',
+            apiKey: videoApiKey
+          })
+        });
+        const fallbackData = await fallbackRes.json();
+        return fallbackData.audioUrl;
+      }
+    }
+
+    // ── INDIVIDUAL & QUEUED SCENE CREATOR (BLOCKING CALLS) ─────────────
+    function generateAndBlock(i) {
+      return new Promise(async (resolve, reject) => {
+        const scene = scenes[i];
+        
+        let model = getSelectedVideoModel();
+        const isAvatarPlatform = scene.platform === 'hunyuanavatar';
+        if (isAvatarPlatform) {
+          model = 'fal-ai/hunyuan-avatar';
+        }
+
+        const override = document.getElementById('globalModelOverride').value;
+        if (override && !isAvatarPlatform) {
+          model = override;
+        }
+
+        let promptText = scene.generatedPrompt;
+
+        // 🎙️ STEP 1: If it's a Hunyuan Avatar scene and has a voiceover, synthesize speech audio first!
+        if (isAvatarPlatform && scene.voiceover && !scene.speechAudioUrl) {
+          scene.videoStatus = '🎙️ SYNTHESIZING VOICE';
+          scene.videoLogs = [{ message: 'Synthesizing character speech from voiceover text...' }];
+          renderScenes();
+          
+          try {
+            const speechUrl = await synthesizeVoiceAudio(i);
+            scene.speechAudioUrl = speechUrl;
+            scene.videoLogs.push({ message: `Voice synthesized successfully. Public audio URL: ${speechUrl}` });
+            renderScenes();
+          } catch (voiceErr) {
+            console.warn("Speech synthesis failed, using default sample sound", voiceErr);
+            scene.speechAudioUrl = 'https://samplelib.com/lib/preview/mp3/sample-9s.mp3'; // safe sandbox audio sample
+          }
+        }
+
+        scene.videoStatus = 'SUBMITTING';
+        scene.videoLogs.push({ message: 'Assembling request payloads...' });
+        scene.videoError = '';
+        renderScenes();
+
+        try {
+          let submitResponse;
+          let submitInputPayload = null;
+
+          if (isAvatarPlatform) {
+            submitInputPayload = {
+              image_url: scene.avatarImageUrl,
+              audio_url: scene.speechAudioUrl || 'https://samplelib.com/lib/preview/mp3/sample-9s.mp3',
+              text: scene.voiceover || 'A professional speaking confidently'
+            };
+          }
+
+          if (hasProxyBackend) {
+            const res = await fetch(apiBase + '/api/video/submit', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                provider: isAvatarPlatform ? 'fal-ai' : videoProvider,
+                model: model,
+                apiKey: videoApiKey,
+                secretKey: videoProvider === 'kling-direct' ? videoSecretKey : null,
+                prompt: promptText,
+                duration: scene.duration || 4,
+                input: submitInputPayload
+              })
+            });
+            submitResponse = await res.json();
+            if (!res.ok) throw new Error(submitResponse.error || 'Submission failed');
+          } else {
+            // Standalone Direct browser submission (only works seamlessly for Fal.ai due to CORS allowance)
+            if (videoProvider === 'fal-ai' || isAvatarPlatform) {
+              const res = await fetch(`https://queue.fal.run/${model}`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Key ${videoApiKey}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(submitInputPayload || {
+                  prompt: promptText,
+                  aspect_ratio: '16:9'
+                })
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
+              submitResponse = {
+                requestId: data.request_id,
+                statusUrl: data.status_url || `https://queue.fal.run/${model}/requests/${data.request_id}/status`,
+                responseUrl: data.response_url || `https://queue.fal.run/${model}/requests/${data.request_id}`,
+                provider: 'fal-ai',
+                model: model
+              };
+            } else {
+              throw new Error('CORS blocks direct Replicate or Kling AI calls from sandbox origins. Deploy the local backend to enable.');
+            }
+          }
+
+          scene.videoStatus = 'QUEUED';
+          scene.requestId = submitResponse.requestId;
+          scene.statusUrl = submitResponse.statusUrl;
+          scene.videoLogs.push({ message: `Submitting success. Request ID: ${scene.requestId}` });
+          renderScenes();
+
+          // Poll loop
+          let pollCount = 0;
+          const maxPolls = 150;
+          
+          const timer = setInterval(async () => {
+            if (stopBatchRequested) {
+              clearInterval(timer);
+              return reject(new Error('Halted manually'));
+            }
+            
+            pollCount++;
+            if (pollCount > maxPolls) {
+              clearInterval(timer);
+              scene.videoStatus = 'FAILED';
+              scene.videoError = 'Timeout waiting for video results.';
+              renderScenes();
+              return reject(new Error('Timeout'));
+            }
+
+            try {
+              let statusData;
+              if (hasProxyBackend) {
+                const res = await fetch(apiBase + '/api/video/status', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    provider: isAvatarPlatform ? 'fal-ai' : videoProvider,
+                    requestId: scene.requestId,
+                    model: model,
+                    apiKey: videoApiKey,
+                    secretKey: videoProvider === 'kling-direct' ? videoSecretKey : null,
+                    statusUrl: scene.statusUrl
+                  })
+                });
+                statusData = await res.json();
+                if (!res.ok) throw new Error(statusData.error || 'Status check error');
+              } else {
+                if (videoProvider === 'fal-ai' || isAvatarPlatform) {
+                  const headers = { 'Authorization': `Key ${videoApiKey}` };
+                  const statusRes = await fetch(scene.statusUrl, { headers });
+                  const statusJson = await statusRes.json();
+                  if (!statusRes.ok) throw new Error(JSON.stringify(statusJson));
+                  
+                  if (statusJson.status === 'COMPLETED') {
+                    const resultRes = await fetch(`https://queue.fal.run/${model}/requests/${scene.requestId}`, { headers });
+                    const resultJson = await resultRes.json();
+                    const videoUrl = resultJson.video?.url || resultJson.images?.[0]?.url || resultJson.output?.video?.url || null;
+                    statusData = { status: 'COMPLETED', videoUrl };
+                  } else if (statusJson.status === 'FAILED') {
+                    statusData = { status: 'FAILED', error: 'Queue reported generation error.' };
+                  } else {
+                    statusData = { status: statusJson.status, logs: statusJson.logs || [] };
+                  }
+                }
+              }
+
+              if (statusData.status === 'COMPLETED') {
+                clearInterval(timer);
+                scene.videoStatus = 'SUCCESS';
+                scene.videoUrl = statusData.videoUrl;
+                scene.videoLogs.push({ message: 'Success! Video rendered completely.' });
+                addMsg('director', `✨ **Scene ${scene.num} finished rendering!** Playable now in Dashboard.`);
+                renderScenes();
+                buildBoard();
+                renderTimeline();
+                resolve(statusData.videoUrl);
+              } else if (statusData.status === 'FAILED') {
+                clearInterval(timer);
+                scene.videoStatus = 'FAILED';
+                scene.videoError = statusData.error || 'Failed';
+                renderScenes();
+                reject(new Error(scene.videoError));
+              } else {
+                scene.videoStatus = statusData.status || 'GENERATING';
+                if (statusData.logs && statusData.logs.length > 0) {
+                  scene.videoLogs = statusData.logs;
+                }
+                renderScenes();
+              }
+            } catch (err) {
+              console.error(err);
+              scene.videoLogs.push({ message: `Polling query retry: ${err.message}` });
+              renderScenes();
+            }
+          }, 5000);
+
+        } catch (err) {
+          scene.videoStatus = 'FAILED';
+          scene.videoError = err.message || 'Error';
+          renderScenes();
+          reject(err);
+        }
+      });
+    }
+
+    async function createVideo(i) {
+      if (!videoApiKey) {
+        alert("Video API keys are required in the Video API Bar above.");
+        return;
+      }
+      try {
+        await generateAndBlock(i);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // ── STORYBOARD & TIMELINE GALLERIES ───────────────────────────────
+    function buildBoard() {
+      const g = document.getElementById('boardGrid');
+      g.innerHTML = '';
+      if (scenes.length === 0) {
+        g.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🖼️</div><div class="empty-msg">No scenes yet. Load some scenes on the UPLOAD tab!</div></div>';
+        return;
+      }
+      const icons = { Hook: '🎯', Problem: '😤', Solution: '✨', Demo: '📱', Testimonial: '👤', CTA: '🚀', Transition: '➡️', 'B-Roll': '🎬', Presenter: '🗣️', Effect: '⚡', General: '🎬' };
+      
+      scenes.forEach(s => {
+        const p = PLATFORMS[s.platform] || PLATFORMS.kling;
+        const card = document.createElement('div');
+        card.className = 'board-card';
+        card.onclick = () => switchTab('router', document.querySelectorAll('.tab-btn')[1]);
+        
+        const frameContent = s.videoStatus === 'SUCCESS' && s.videoUrl ? 
+          `<video src="${s.videoUrl}" autoplay muted loop playsinline></video>` : 
+          `<div class="board-placeholder-icon">${icons[s.type] || '🎬'}</div>`;
+
+        card.innerHTML = `
+          <div class="board-frame">
+            ${frameContent}
+            <div class="board-badge">${p.icon} Scene ${s.num} · ${s.duration}s</div>
+            <div class="board-plat-badge" style="color:${p.color}">${p.name}</div>
+          </div>
+          <div class="board-info">
+            <div>
+              <div class="board-title">${s.type.toUpperCase()} · ${s.mood || 'Cinematic'}</div>
+              <div class="board-desc">${(s.desc || '').substring(0, 75)}${(s.desc || '').length > 75 ? '...' : ''}</div>
+            </div>
+            ${s.videoUrl ? `<span style="font-size: 8px; color: var(--green); margin-top: 5px; font-weight:bold;">● Video Rendered</span>` : ''}
+          </div>
+        `;
+        g.appendChild(card);
+      });
+    }
+
+    function renderTimeline() {
+      const track = document.getElementById('tlTrack');
+      track.innerHTML = '';
+      if (scenes.length === 0) {
+        track.innerHTML = '<div class="empty-state"><div class="empty-icon">⏱️</div><div class="empty-msg">No scenes yet</div></div>';
+        return;
+      }
+      const total = scenes.reduce((sum, s) => sum + (s.duration || 3), 0);
+      const hdr = document.createElement('div');
+      hdr.className = 'tl-row';
+      hdr.style.marginBottom = '10px';
+      hdr.innerHTML = `
+        <div class="tl-plat" style="font-weight: bold; color: var(--text);">Timeline</div>
+        <div style="font-family:\'JetBrains Mono\',monospace; font-size: 9px; color: var(--accent); font-weight: bold;">
+          Total Production Length: ${total}s | ${scenes.length} Scenes
+        </div>
+      `;
+      track.appendChild(hdr);
+
+      scenes.forEach(s => {
+        const p = PLATFORMS[s.platform] || PLATFORMS.kling;
+        const pct = ((s.duration || 3) / total * 100).toFixed(1);
+        const row = document.createElement('div');
+        row.className = 'tl-row';
+        
+        let statusStyle = s.videoStatus === 'SUCCESS' ? 'background: rgba(0, 230, 118, 0.15); border: 1px solid var(--green)' : 'background: var(--dim); border: 1px solid var(--border)';
+        
+        row.innerHTML = `
+          <div class="tl-plat">${p.icon} ${p.name}</div>
+          <div class="tl-bar" style="${statusStyle}" onclick="switchTab('router', document.querySelectorAll('.tab-btn')[1])">
+            <div class="tl-bar-fill" style="width: ${pct}%"></div>
+            <div class="tl-bar-text">
+              <strong>Scene ${s.num}</strong>: ${s.type} (${s.duration}s) | Pacing: <span style="color:var(--orange)">${s.pacingPhase}</span>
+              ${s.videoStatus === 'SUCCESS' ? ' <span style="color:var(--green)">[Done]</span>' : ''}
+            </div>
+            <div class="tl-dur" style="margin-left:auto; font-weight:bold;">${pct}%</div>
+          </div>
+          <div class="tl-dur">${s.duration}s</div>
+        `;
+        track.appendChild(row);
+      });
+    }
+
+    // ── EXPORT PLAN ───────────────────────────────────────────────────
+    function exportPlan() {
+      if (scenes.length === 0) {
+        addMsg('director', 'No scenes to export. Load some scenes on the UPLOAD tab first!');
+        return;
+      }
+      const total = scenes.reduce((sum, s) => sum + (s.duration || 3), 0);
+      let out = 'TWAIN BATCH ROUTER — PRODUCTION CHECKLIST PLAN\n';
+      out += 'Generated: ' + new Date().toLocaleDateString() + '\n';
+      out += '='.repeat(60) + '\n\n';
+      out += `Total Parsed Scenes: ${scenes.length} | Sequence length: ${total}s\n\n`;
+      
+      scenes.forEach(s => {
+        const p = PLATFORMS[s.platform];
+        out += `SCENE ${s.num} — ${s.type} (${s.duration}s)\n`;
+        out += `Pacing Phase: ${s.pacingPhase}\n`;
+        out += `Shot Grammar: ${s.shotGrammarTerm}\n`;
+        out += `Recommendation: ${p.name}\n`;
+        out += `Visual Context: ${s.desc}\n`;
+        if (s.voiceover) out += `Dialogue Speak: "${s.voiceover}"\n`;
+        out += `Continuity-Rich Optimized Prompt:\n${s.generatedPrompt || '(Not prompt-optimized)'}\n`;
+        if (s.videoUrl) {
+          out += `Rendered Clip URL: ${s.videoUrl}\n`;
+        }
+        out += '-'.repeat(40) + '\n\n';
+      });
+
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([out], { type: 'text/plain' }));
+      a.download = 'TWAIN_Batch_Router_Checklist.txt';
+      a.click();
+      addMsg('director', '✅ Exported production checklist document successfully.');
+    }
+
+    // ── UNIVERSAL AI CALL ─────────────────────────────────────────────
+    async function callAI(sys, usr) {
+      if (!apiKey) {
+        addMsg('director', '⚠️ LLM API key not set. Paste your key in the Gold bar above to unlock chat and prompts.');
+        return null;
+      }
+      const model = document.getElementById('modelSelect').value;
+
+      if (hasProxyBackend) {
+        try {
+          const res = await fetch(apiBase + '/api/llm/completion', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              provider,
+              model,
+              apiKey,
+              system: sys,
+              prompt: usr
+            })
+          });
+          const d = await res.json();
+          if (!res.ok) throw new Error(d.error || JSON.stringify(d));
+          return d.content;
+        } catch (e) {
+          console.warn('Proxy fallback trigger', e);
+        }
+      }
+
+      const p = PROVIDERS[provider];
+      if (provider === 'gemini') {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const body = { contents: [{ parts: [{ text: sys + '\n\n' + usr }] }] };
+        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const d = await res.json();
+        return d.candidates?.[0]?.content?.parts?.[0]?.text || null;
+      }
+
+      if (provider === 'anthropic') {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({ model, max_tokens: 2000, system: sys, messages: [{ role: 'user', content: usr }] })
+        });
+        const d = await res.json();
+        return d.content?.[0]?.text || null;
+      }
+
+      const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey };
+      if (provider === 'openrouter') {
+        headers['HTTP-Referer'] = 'https://twainstudio.dev';
+        headers['X-Title'] = 'TWAIN Director';
+      }
+      
+      const endpoint = (provider === 'openrouter') ? 'https://openrouter.ai/api/v1/chat/completions' :
+                       (provider === 'groq') ? 'https://api.groq.com/openai/v1/chat/completions' :
+                       (provider === 'openai') ? 'https://api.openai.com/v1/chat/completions' :
+                       (provider === 'deepseek') ? 'https://api.deepseek.com/v1/chat/completions' :
+                       (provider === 'xai') ? 'https://api.x.ai/v1/chat/completions' :
+                       (provider === 'mistral') ? 'https://api.mistral.ai/v1/chat/completions' : '';
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ model, max_tokens: 2000, messages: [{ role: 'system', content: sys }, { role: 'user', content: usr }] })
+      });
+      const d = await res.json();
+      return d.choices?.[0]?.message?.content || null;
+    }
+
+    // ── CHAT SIDEBAR ──────────────────────────────────────────────────
+    const DIR_SYS = `You are DIRECTOR, the ultimate Batch Video Router controller for TWAIN Creation Studios. 
+    You help users upload visual scene plans copied from writing environments like Google Opal, parse their visual fields, and orchestrate massive multi-model parallel video rendering jobs via Fal.ai and Replicate.
+    We have fully integrated working Western Shot Grammar (dolly-ins, ridge wides, saloon shadows, train tracking shots, lantern close-ups) and SOTA Character Continuity Profiles for Herbert, Harbaugh, McDaniel, James, Mack, and Tuli.
+    Talk like an experienced film cinematographer. Point out how shot grammar, character descriptions, and spacing waveforms bring elite Hollywood quality.`;
+
+    async function sendChat() {
+      const inp = document.getElementById('chatInp');
+      const msg = inp.value.trim();
+      if (!msg) return;
+      inp.value = '';
+      addMsg('user', msg);
+      showTyping();
+      try {
+        const reply = await callAI(DIR_SYS, msg);
+        removeTyping();
+        if (reply) addMsg('director', reply);
+        else addMsg('director', 'No response. Check your LLM API key.');
+      } catch (e) {
+        removeTyping();
+        addMsg('director', 'Connection error: ' + e.message);
+      }
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChat();
+      }
+    }
+
+    function addMsg(role, text) {
+      const c = document.getElementById('chatMsgs');
+      const d = document.createElement('div');
+      d.className = 'msg msg-' + role;
+      const label = role === 'director' ? 'Director' : 'You';
+      let formattedText = text.replace(/\*\*(.*?)\*\"/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+      d.innerHTML = `<div class="msg-label">${label}</div><div>${formattedText}</div>`;
+      c.appendChild(d);
+      c.scrollTop = c.scrollHeight;
+    }
+
+    function showTyping() {
+      const c = document.getElementById('chatMsgs');
+      const d = document.createElement('div');
+      d.id = 'typing';
+      d.className = 'msg msg-director typing';
+      d.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+      c.appendChild(d);
+      c.scrollTop = c.scrollHeight;
+    }
+
+    function removeTyping() {
+      const el = document.getElementById('typing');
+      if (el) el.remove();
+    }
+
+    // ── UTILITY TABS CONTROLLERS ──────────────────────────────────────
+    function switchTab(id, btn) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + id).classList.add('active');
+      if (btn) btn.classList.add('active');
+      if (id === 'storyboard') buildBoard();
+      if (id === 'timeline') {
+        renderTimeline();
+        drawPacingCurve();
+      }
+    }
+
+    function setProgress(pct) {
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function selectPlatform(key, el) {
+      document.querySelectorAll('.pc').forEach(c => c.classList.remove('sel'));
+      el.classList.add('sel');
+      const p = PLATFORMS[key];
+      addMsg('director', `**${p.name}**\n\n${!p.free ? '⚠️ REQUIRES A CREDIT CARD.\n\n' : '✅ No credit card required.\n\n'}${PLATFORM_GUIDANCE[key]}`);
+    }
+
+    // ── INITIALIZATION ────────────────────────────────────────────────
+    updateProviderModels();
+    updateVideoModels();
+    renderRoster();
+
+    checkBackend().then(() => {
+      updateProviderModels();
+      updateVideoModels();
+    });
+  </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a07ad4131c383340',t:'MTc4MDc4NDY3OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
