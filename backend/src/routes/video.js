@@ -361,13 +361,76 @@ async function geminiOmniCreateCharacter({ apiKey, imageUrl, descriptions, chara
   throw new Error('Character creation timed out');
 }
 
+// ── Colab Local Server (FREE) ────────────────────────────────────────
+
+async function colabSubmit({ colabUrl, prompt, duration, aspectRatio, quality, seed }) {
+  if (!colabUrl) throw new Error('Colab server URL not configured. Run the DirectorX Colab notebook first.');
+
+  const baseUrl = colabUrl.replace(/\/$/, '');
+
+  // Health check first
+  try {
+    const healthRes = await fetch(`${baseUrl}/api/health`, { timeout: 5000 });
+    if (!healthRes.ok) throw new Error('Colab server not responding');
+  } catch (e) {
+    throw new Error(`Can't reach Colab server at ${baseUrl} — is the notebook running? (${e.message})`);
+  }
+
+  const res = await fetch(`${baseUrl}/api/video/submit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt,
+      aspect_ratio: aspectRatio || '16:9',
+      duration: duration || 3,
+      quality: quality || 'standard',
+      seed: seed || -1
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || JSON.stringify(data));
+
+  return {
+    requestId: data.requestId,
+    statusUrl: `${baseUrl}/api/video/status/${data.requestId}`,
+    responseUrl: `${baseUrl}/api/video/download/${data.requestId}`,
+    provider: 'colab-local',
+    model: data.model || 'LTX-Video'
+  };
+}
+
+async function colabStatus({ statusUrl, colabUrl, requestId }) {
+  const url = statusUrl || `${colabUrl}/api/video/status/${requestId}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || JSON.stringify(data));
+
+  if (data.status === 'COMPLETED' && data.videoUrl) {
+    // Convert relative URL to absolute
+    const baseUrl = (colabUrl || statusUrl.split('/api/')[0]).replace(/\/$/, '');
+    const videoUrl = data.videoUrl.startsWith('http') ? data.videoUrl : `${baseUrl}${data.videoUrl}`;
+    return { status: 'COMPLETED', videoUrl };
+  }
+
+  if (data.status === 'FAILED') {
+    return { status: 'FAILED', error: data.error || 'Generation failed' };
+  }
+
+  return {
+    status: data.status || 'IN_PROGRESS',
+    logs: data.queue_position ? [{ message: `Queue position: ${data.queue_position}` }] : []
+  };
+}
+
 // ── Route Handlers ───────────────────────────────────────────────────
 
 export async function handleVideoSubmit(req, res) {
   try {
     const { provider, model, apiKey, secretKey, prompt, duration, input,
             aspectRatio, resolution, audioIds, characterIds, imageUrls, seed,
-            videoUrl, trimStart, trimEnd, descriptions, characterName } = req.body;
+            videoUrl, trimStart, trimEnd, descriptions, characterName,
+            colabUrl, quality } = req.body;
 
     if (!provider || !apiKey) {
       return res.status(400).json({ error: 'Missing required fields: provider, apiKey' });
@@ -394,6 +457,9 @@ export async function handleVideoSubmit(req, res) {
       case 'gemini-omni-character':
         result = await geminiOmniCreateCharacter({ apiKey, imageUrl: imageUrls?.[0], descriptions, characterName, audioIds });
         return res.json(result);
+      case 'colab-local':
+        result = await colabSubmit({ colabUrl, prompt, duration, aspectRatio, quality, seed });
+        break;
       default:
         return res.status(400).json({ error: `Unknown video provider: ${provider}` });
     }
@@ -428,6 +494,9 @@ export async function handleVideoStatus(req, res) {
       case 'gemini-omni':
       case 'gemini-omni-edit':
         result = await geminiOmniStatus({ requestId, apiKey });
+        break;
+      case 'colab-local':
+        result = await colabStatus({ statusUrl, colabUrl: req.body.colabUrl, requestId });
         break;
       default:
         return res.status(400).json({ error: `Unknown video provider: ${provider}` });
