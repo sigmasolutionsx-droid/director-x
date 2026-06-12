@@ -30,7 +30,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     server: 'director-x-backend',
-    version: '1.1.0',
+    version: '1.2.0',
     endpoints: [
       'GET  /api/health',
       'POST /api/llm/completion',
@@ -62,7 +62,7 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n🎬 Director-X Backend v1.1.0 running on http://localhost:${PORT}`);
+  console.log(`\n🎬 Director-X Backend v1.2.0 running on http://localhost:${PORT}`);
   console.log(`📡 Health: http://localhost:${PORT}/api/health`);
   console.log(`🎥 Place DirectorX.html in the project root to serve it\n`);
 });

@@ -1248,13 +1248,123 @@
       background: var(--border2);
       border-radius: 2px;
     }
+    /* Full Pipeline Overlay */
+    .pipeline-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+    .pipeline-overlay.active { display: flex; }
+    .pipeline-panel {
+      background: var(--dim);
+      border: 1px solid var(--gold);
+      border-radius: 10px;
+      padding: 24px 32px;
+      width: 540px;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 0 60px rgba(212,164,55,0.25);
+    }
+    .pipeline-panel h2 {
+      color: var(--gold);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      margin: 0 0 16px 0;
+      text-align: center;
+    }
+    .pipeline-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .pipeline-step .step-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .pipeline-step.active .step-icon { background: rgba(212,164,55,0.2); border-color: var(--gold); }
+    .pipeline-step.done .step-icon { background: rgba(72,187,120,0.2); border-color: #48BB78; }
+    .pipeline-step.error .step-icon { background: rgba(229,62,62,0.2); border-color: #E53E3E; }
+    .pipeline-step .step-info { flex: 1; }
+    .pipeline-step .step-name { font-size: 11px; font-weight: bold; color: var(--text); }
+    .pipeline-step.active .step-name { color: var(--gold); }
+    .pipeline-step.done .step-name { color: #48BB78; }
+    .pipeline-step .step-detail { font-size: 9px; color: var(--muted); margin-top: 2px; }
+    .pipeline-step .step-time { font-size: 9px; color: var(--accent); font-family: 'JetBrains Mono', monospace; }
   </style>
 </head>
 <body>
+  <!-- FULL PIPELINE OVERLAY -->
+  <div class="pipeline-overlay" id="pipelineOverlay">
+    <div class="pipeline-panel">
+      <h2>🚀 FULL PIPELINE</h2>
+      <div id="pipelineSteps">
+        <div class="pipeline-step" id="ps-parse">
+          <div class="step-icon">📰</div>
+          <div class="step-info">
+            <div class="step-name">Step 1: Parse Article → Scenes</div>
+            <div class="step-detail" id="ps-parse-detail">Waiting...</div>
+          </div>
+          <div class="step-time" id="ps-parse-time"></div>
+        </div>
+        <div class="pipeline-step" id="ps-video">
+          <div class="step-icon">🎬</div>
+          <div class="step-info">
+            <div class="step-name">Step 2: Generate Videos (All Scenes)</div>
+            <div class="step-detail" id="ps-video-detail">Waiting...</div>
+          </div>
+          <div class="step-time" id="ps-video-time"></div>
+        </div>
+        <div class="pipeline-step" id="ps-voice">
+          <div class="step-icon">🎙️</div>
+          <div class="step-info">
+            <div class="step-name">Step 3: Generate Voiceovers</div>
+            <div class="step-detail" id="ps-voice-detail">Waiting...</div>
+          </div>
+          <div class="step-time" id="ps-voice-time"></div>
+        </div>
+        <div class="pipeline-step" id="ps-seo">
+          <div class="step-icon">🔍</div>
+          <div class="step-info">
+            <div class="step-name">Step 4: Generate SEO Metadata</div>
+            <div class="step-detail" id="ps-seo-detail">Waiting...</div>
+          </div>
+          <div class="step-time" id="ps-seo-time"></div>
+        </div>
+        <div class="pipeline-step" id="ps-export">
+          <div class="step-icon">📦</div>
+          <div class="step-info">
+            <div class="step-name">Step 5: Package & Download</div>
+            <div class="step-detail" id="ps-export-detail">Waiting...</div>
+          </div>
+          <div class="step-time" id="ps-export-time"></div>
+        </div>
+      </div>
+      <div style="margin-top:16px; text-align:center;">
+        <div id="pipelineOverallStatus" style="font-size:11px; color:var(--gold); margin-bottom:10px;">Ready to launch</div>
+        <button class="btn btn-ghost" onclick="cancelPipeline()" id="pipelineCancelBtn" style="display:none;">🛑 Cancel Pipeline</button>
+        <button class="btn btn-pri" onclick="closePipelineOverlay()" id="pipelineCloseBtn" style="display:none;">✅ Close & Review</button>
+      </div>
+    </div>
+  </div>
+
   <!-- HEADER -->
   <div class="app-header">
     <div class="brand">T.W.A.I.N. <span>CONCURRENT ROUTER</span></div>
-    <div class="verified-badge">🎬 CINEMATIC ENGINE ACTIVE — 8-DIVISION THEME ENGINE • SUBSTACK IMPORT • FREE COLAB VIDEO</div>
+    <div class="verified-badge">🎬 CINEMATIC ENGINE v1.2 — ONE-CLICK PIPELINE • 8-DIVISION THEMES • VOICE PRESETS • SEO ENGINE</div>
     <div class="header-right">twainstudio.dev</div>
   </div>
 
@@ -1434,6 +1544,7 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
                 <option value="facebook">👤 Facebook (16:9)</option>
               </select>
               <button class="btn btn-pri" style="width:100%; margin-top:6px; background:linear-gradient(135deg, #ff6719, #e05500);" onclick="importSubstackArticle()">📰 Parse Article → Scenes</button>
+              <button class="btn btn-pri" style="width:100%; margin-top:4px; background:linear-gradient(135deg, #D4A437, #B8860B); font-size:10px; padding:8px; letter-spacing:0.5px;" onclick="runFullPipeline()">🚀 FULL PIPELINE: Article → Scenes → Video → Voice → SEO → Download</button>
               <div id="substackStatus" style="font-size:9px; color:var(--muted); margin-top:4px;"></div>
             </div>
 
@@ -2373,6 +2484,356 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
       }
     }
 
+
+    // ── FULL PIPELINE ORCHESTRATOR ──────────────────────────────────
+    let pipelineRunning = false;
+    let pipelineCancelled = false;
+
+    function setPipelineStep(stepId, state, detail, elapsed) {
+      const el = document.getElementById('ps-' + stepId);
+      if (!el) return;
+      el.className = 'pipeline-step ' + state; // '', 'active', 'done', 'error'
+      const detailEl = document.getElementById('ps-' + stepId + '-detail');
+      if (detailEl && detail) detailEl.textContent = detail;
+      const timeEl = document.getElementById('ps-' + stepId + '-time');
+      if (timeEl && elapsed !== undefined) timeEl.textContent = elapsed + 's';
+    }
+
+    function closePipelineOverlay() {
+      document.getElementById('pipelineOverlay').classList.remove('active');
+    }
+
+    function cancelPipeline() {
+      pipelineCancelled = true;
+      stopBatchRequested = true;
+      document.getElementById('pipelineOverallStatus').textContent = '🛑 Cancelling...';
+      document.getElementById('pipelineCancelBtn').style.display = 'none';
+      document.getElementById('pipelineCloseBtn').style.display = 'inline-block';
+    }
+
+    async function runFullPipeline() {
+      // ── Validate inputs ──
+      const articleText = document.getElementById('substackArticleInput').value.trim();
+      if (!articleText) {
+        alert('Paste your Substack article text first, then hit Full Pipeline.');
+        return;
+      }
+      if (!videoApiKey) {
+        alert('Set your Video API key in the sidebar before running the pipeline.');
+        return;
+      }
+
+      // ── Reset state ──
+      pipelineRunning = true;
+      pipelineCancelled = false;
+      stopBatchRequested = false;
+      ['parse','video','voice','seo','export'].forEach(s => setPipelineStep(s, '', 'Waiting...'));
+      document.getElementById('pipelineOverallStatus').textContent = '⏳ Pipeline running...';
+      document.getElementById('pipelineCancelBtn').style.display = 'inline-block';
+      document.getElementById('pipelineCloseBtn').style.display = 'none';
+      document.getElementById('pipelineOverlay').classList.add('active');
+
+      const pipelineStart = Date.now();
+      const elapsed = () => ((Date.now() - pipelineStart) / 1000).toFixed(1);
+
+      try {
+        // ══════════════════════════════════════════════════════════════
+        //  STEP 1: PARSE ARTICLE → SCENES
+        // ══════════════════════════════════════════════════════════════
+        let stepStart = Date.now();
+        setPipelineStep('parse', 'active', 'Parsing article through theme engine...');
+        addMsg('director', '🚀 **Full Pipeline launched!** Step 1/5: Parsing article...');
+
+        const themeOverride = document.getElementById('substackThemeOverride').value;
+        const exportPlatform = document.getElementById('substackExportPlatform').value;
+        const aspect = PLATFORM_ASPECTS[exportPlatform] || '16:9';
+
+        if (hasProxyBackend) {
+          try {
+            const res = await fetch(apiBase + '/api/substack/parse', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                content: articleText,
+                theme: themeOverride !== 'auto' ? themeOverride : undefined
+              })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Parse failed');
+
+            const backendScenes = (data.scenes || []).map((s, idx) => ({
+              num: s.sceneNumber || (idx + 1),
+              type: s.type || 'General',
+              desc: s.visualPrompt || s.description || 'No description',
+              voiceover: s.voiceover || '',
+              duration: s.duration || 4,
+              mood: s.mood || 'Cinematic',
+              shotType: s.shotType || 'Medium',
+              platform: 'kling',
+              exportAspect: aspect,
+              exportQuality: 'standard',
+              generatedPrompt: s.visualPrompt || s.description || '',
+              videoStatus: 'IDLE',
+              videoUrl: null,
+              videoError: '',
+              videoLogs: [],
+              detectedCharacters: s.characters || []
+            }));
+
+            document.getElementById('scenePasteArea').value = JSON.stringify(backendScenes, null, 2);
+            triggerParseAndLoad();
+
+            // Apply aspect to all scenes
+            scenes.forEach(s => {
+              s.exportAspect = aspect;
+              s.videoStatus = 'IDLE';
+              s.videoUrl = null;
+              s.videoError = '';
+              s.videoLogs = [];
+            });
+            renderScenes();
+
+          } catch (err) {
+            // Fallback to paragraph split
+            const paragraphs = articleText.split(/\\n\\n+/).filter(p => p.trim().length > 30);
+            const fallbackScenes = paragraphs.slice(0, 20).map((p, idx) => ({
+              num: idx + 1,
+              type: idx === 0 ? 'Hook' : 'General',
+              desc: p.trim().substring(0, 300),
+              voiceover: '',
+              duration: 4,
+              mood: 'Cinematic',
+              shotType: 'Medium',
+              platform: 'kling',
+              exportAspect: aspect
+            }));
+            document.getElementById('scenePasteArea').value = JSON.stringify(fallbackScenes, null, 2);
+            triggerParseAndLoad();
+          }
+        } else {
+          // Client-side fallback
+          const paragraphs = articleText.split(/\\n\\n+/).filter(p => p.trim().length > 30);
+          const fallbackScenes = paragraphs.slice(0, 20).map((p, idx) => ({
+            num: idx + 1,
+            type: idx === 0 ? 'Hook' : 'General',
+            desc: p.trim().substring(0, 300),
+            voiceover: '',
+            duration: 4,
+            mood: 'Cinematic',
+            shotType: 'Medium',
+            platform: 'kling',
+            exportAspect: aspect
+          }));
+          document.getElementById('scenePasteArea').value = JSON.stringify(fallbackScenes, null, 2);
+          triggerParseAndLoad();
+        }
+
+        if (pipelineCancelled) throw new Error('Pipeline cancelled');
+        setPipelineStep('parse', 'done', scenes.length + ' scenes extracted', ((Date.now() - stepStart) / 1000).toFixed(1));
+        addMsg('director', '✅ Step 1 complete: **' + scenes.length + ' scenes** parsed.');
+
+        // ══════════════════════════════════════════════════════════════
+        //  STEP 2: GENERATE VIDEOS (CONCURRENT BATCH)
+        // ══════════════════════════════════════════════════════════════
+        stepStart = Date.now();
+        setPipelineStep('video', 'active', 'Generating videos for ' + scenes.length + ' scenes...');
+        addMsg('director', '🎬 Step 2/5: Generating videos for all ' + scenes.length + ' scenes...');
+
+        // Reset all scenes to IDLE for batch
+        scenes.forEach(s => {
+          if (s.videoStatus !== 'SUCCESS') {
+            s.videoStatus = 'IDLE';
+            s.videoUrl = null;
+            s.videoError = '';
+            s.videoLogs = [];
+          }
+        });
+        renderScenes();
+
+        // Run concurrent batch — reuse existing logic
+        const concurrency = parseInt(document.getElementById('concurrencySelect')?.value) || 2;
+        let batchIdx = 0;
+        const batchQueue = scenes.filter(s => s.videoStatus === 'IDLE');
+
+        async function pipelineVideoWorker() {
+          while (batchIdx < batchQueue.length && !pipelineCancelled) {
+            const scene = batchQueue[batchIdx++];
+            const sceneIdx = scenes.findIndex(s => s.num === scene.num);
+            if (sceneIdx !== -1) {
+              try {
+                await generateAndBlock(sceneIdx);
+              } catch (e) {
+                console.warn('Scene ' + scene.num + ' failed:', e.message);
+              }
+            }
+            // Update pipeline detail
+            const done = scenes.filter(s => s.videoStatus === 'SUCCESS').length;
+            const failed = scenes.filter(s => s.videoStatus === 'FAILED').length;
+            setPipelineStep('video', 'active', done + '/' + scenes.length + ' done' + (failed ? ', ' + failed + ' failed' : ''));
+          }
+        }
+
+        const numWorkers = Math.min(concurrency, batchQueue.length);
+        const videoWorkers = [];
+        for (let w = 0; w < numWorkers; w++) {
+          videoWorkers.push(pipelineVideoWorker());
+        }
+        await Promise.all(videoWorkers);
+
+        if (pipelineCancelled) throw new Error('Pipeline cancelled');
+        const videoDone = scenes.filter(s => s.videoStatus === 'SUCCESS').length;
+        const videoFailed = scenes.filter(s => s.videoStatus === 'FAILED').length;
+        setPipelineStep('video', videoDone > 0 ? 'done' : 'error',
+          videoDone + ' videos rendered' + (videoFailed ? ', ' + videoFailed + ' failed' : ''),
+          ((Date.now() - stepStart) / 1000).toFixed(1));
+        addMsg('director', '✅ Step 2 complete: **' + videoDone + ' videos** rendered.');
+
+        // ══════════════════════════════════════════════════════════════
+        //  STEP 3: GENERATE VOICEOVERS
+        // ══════════════════════════════════════════════════════════════
+        stepStart = Date.now();
+        const voiceProvider = document.getElementById('voiceProviderSelect')?.value || 'fal-kokoro';
+        const voiceApiKey = document.getElementById('voiceApiKeyInput')?.value || '';
+        const hasVoiceSetup = (voiceProvider === 'fal-kokoro') || (voiceProvider === 'elevenlabs' && voiceApiKey);
+
+        if (hasVoiceSetup && hasProxyBackend) {
+          setPipelineStep('voice', 'active', 'Generating voiceovers...');
+          addMsg('director', '🎙️ Step 3/5: Generating voiceovers...');
+
+          let voiceDone = 0;
+          for (let i = 0; i < scenes.length; i++) {
+            if (pipelineCancelled) break;
+            const scene = scenes[i];
+            const voText = scene.voiceover || scene.desc?.slice(0, 300) || '';
+            if (!voText) continue;
+
+            try {
+              const res = await fetch(apiBase + '/api/voice/synthesize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  provider: voiceProvider,
+                  text: voText,
+                  character: selectedVoicePreset,
+                  apiKey: voiceApiKey,
+                  voiceSettings: {
+                    stability: (document.getElementById('voiceStabilitySlider')?.value || 15) / 100,
+                    similarity_boost: (document.getElementById('voiceClaritySlider')?.value || 65) / 100
+                  }
+                })
+              });
+              const data = await res.json();
+              if (data.audioUrl) {
+                scene.speechAudioUrl = data.audioUrl;
+                voiceDone++;
+              }
+            } catch (err) {
+              console.warn('Voice failed for scene ' + scene.num + ':', err.message);
+            }
+            setPipelineStep('voice', 'active', voiceDone + '/' + scenes.length + ' voiceovers');
+          }
+
+          if (pipelineCancelled) throw new Error('Pipeline cancelled');
+          setPipelineStep('voice', 'done', voiceDone + ' voiceovers generated', ((Date.now() - stepStart) / 1000).toFixed(1));
+          addMsg('director', '✅ Step 3 complete: **' + voiceDone + ' voiceovers** generated.');
+        } else {
+          setPipelineStep('voice', 'done', 'Skipped (no voice provider configured)', '0');
+          addMsg('director', '⏭️ Step 3 skipped — configure voice provider in the Voice tab to include voiceovers.');
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        //  STEP 4: GENERATE SEO METADATA
+        // ══════════════════════════════════════════════════════════════
+        stepStart = Date.now();
+        setPipelineStep('seo', 'active', 'Generating SEO for all platforms...');
+        addMsg('director', '🔍 Step 4/5: Generating SEO metadata...');
+
+        const substackUrl = document.getElementById('seoSubstackUrl')?.value || 'https://riseandclaim.substack.com';
+        const theme = themeOverride !== 'auto' ? themeOverride : undefined;
+        const title = scenes[0]?.title || 'Rise and Claim';
+
+        if (hasProxyBackend) {
+          try {
+            const res = await fetch(apiBase + '/api/seo/generate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title,
+                theme,
+                scenes: scenes.map(s => ({ num: s.num, title: s.title || 'Scene ' + s.num, voiceover: s.voiceover })),
+                substackUrl,
+                platforms: ['youtube', 'tiktok', 'instagram', 'facebook']
+              })
+            });
+            seoData = await res.json();
+          } catch (err) {
+            seoData = generateSEOClientSide({ title, theme: themeOverride, scenes, substackUrl });
+          }
+        } else {
+          seoData = generateSEOClientSide({ title, theme: themeOverride, scenes, substackUrl });
+        }
+        renderSEOCards(seoData);
+
+        if (pipelineCancelled) throw new Error('Pipeline cancelled');
+        setPipelineStep('seo', 'done', 'SEO ready for 4 platforms', ((Date.now() - stepStart) / 1000).toFixed(1));
+        addMsg('director', '✅ Step 4 complete: **SEO metadata** generated for YouTube, TikTok, Instagram, Facebook.');
+
+        // ══════════════════════════════════════════════════════════════
+        //  STEP 5: PACKAGE & PRESENT
+        // ══════════════════════════════════════════════════════════════
+        stepStart = Date.now();
+        setPipelineStep('export', 'active', 'Packaging everything...');
+        addMsg('director', '📦 Step 5/5: Packaging results...');
+
+        // Build a summary manifest
+        const manifest = {
+          title,
+          theme: themeOverride,
+          platforms: exportPlatform,
+          totalScenes: scenes.length,
+          videosGenerated: scenes.filter(s => s.videoStatus === 'SUCCESS').length,
+          voiceoversGenerated: scenes.filter(s => s.speechAudioUrl).length,
+          seoGenerated: seoData ? true : false,
+          scenes: scenes.map(s => ({
+            num: s.num,
+            videoUrl: s.videoUrl || null,
+            voiceUrl: s.speechAudioUrl || null,
+            status: s.videoStatus
+          }))
+        };
+
+        // Store globally so export buttons work
+        window._pipelineManifest = manifest;
+
+        setPipelineStep('export', 'done', 'Ready — use Export buttons in SEO tab', ((Date.now() - stepStart) / 1000).toFixed(1));
+
+        // ── DONE ──
+        const totalTime = ((Date.now() - pipelineStart) / 1000).toFixed(1);
+        document.getElementById('pipelineOverallStatus').innerHTML = '🎉 <strong>Pipeline complete!</strong> ' + videoDone + ' videos, ' + scenes.filter(s => s.speechAudioUrl).length + ' voiceovers, 4-platform SEO — ' + totalTime + 's total';
+        document.getElementById('pipelineCancelBtn').style.display = 'none';
+        document.getElementById('pipelineCloseBtn').style.display = 'inline-block';
+
+        addMsg('director', '🎉 **FULL PIPELINE COMPLETE!**\\n\\n' +
+          '📊 **' + scenes.length + ' scenes** parsed\\n' +
+          '🎬 **' + videoDone + ' videos** generated\\n' +
+          '🎙️ **' + scenes.filter(s => s.speechAudioUrl).length + ' voiceovers** synthesized\\n' +
+          '🔍 **SEO metadata** for YouTube, TikTok, Instagram, Facebook\\n' +
+          '⏱️ Total time: **' + totalTime + 's**\\n\\n' +
+          'Head to the **SEO & Export** tab to download everything!');
+
+      } catch (err) {
+        if (err.message === 'Pipeline cancelled') {
+          document.getElementById('pipelineOverallStatus').textContent = '🛑 Pipeline cancelled.';
+        } else {
+          document.getElementById('pipelineOverallStatus').textContent = '❌ Error: ' + err.message;
+          addMsg('director', '❌ Pipeline error: ' + err.message);
+        }
+        document.getElementById('pipelineCancelBtn').style.display = 'none';
+        document.getElementById('pipelineCloseBtn').style.display = 'inline-block';
+      } finally {
+        pipelineRunning = false;
+      }
+    }
 
     // ── VOICE SYNTHESIS CONTROLS ─────────────────────────────────────
     let selectedVoicePreset = null;
