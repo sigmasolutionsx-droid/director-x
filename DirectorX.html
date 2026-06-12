@@ -1254,7 +1254,7 @@
   <!-- HEADER -->
   <div class="app-header">
     <div class="brand">T.W.A.I.N. <span>CONCURRENT ROUTER</span></div>
-    <div class="verified-badge">🎬 WESTERN CINEMATIC ENGINE ACTIVE — SHOT GRAMMAR & CHARACTER CONTINUITY ENABLED</div>
+    <div class="verified-badge">🎬 CINEMATIC ENGINE ACTIVE — 8-DIVISION THEME ENGINE • SUBSTACK IMPORT • FREE COLAB VIDEO</div>
     <div class="header-right">twainstudio.dev</div>
   </div>
 
@@ -1297,6 +1297,7 @@
         <option value="fal-ai">Fal.ai (Kling, Luma, Hunyuan, Minimax, LTX, Wan)</option>
         <option value="replicate">Replicate (Kling, Hunyuan, Wan, Luma)</option>
         <option value="kling-direct">Kling AI (Official Developer Direct API)</option>
+        <option value="colab-local">🆓 Colab Free — LTX-Video (No API Key)</option>
       </select>
       <select class="model-select" id="videoModelSelect" onchange="checkCustomModel()"></select>
       
@@ -1356,6 +1357,11 @@
         <div class="pc-top"><span>🔵</span><span class="pc-name">Google Vids</span><span class="pc-badge free-b">FREE</span></div>
         <div class="pc-info">10 videos/month · ~8s · highest quality<br>Best: hero shots — use sparingly</div>
       </div>
+      <div class="plat-group" style="margin-top:8px;">🆓 Self-Hosted (Unlimited)</div>
+      <div class="pc" style="--pc:#22d3ee" onclick="selectPlatform('colab',this)">
+        <div class="pc-top"><span>🧪</span><span class="pc-name">Google Colab</span><span class="pc-badge free-b">$0</span></div>
+        <div class="pc-info">LTX-Video on free T4 GPU · unlimited<br>Best: drafts, scene testing, social clips</div>
+      </div>
     </div>
 
     <!-- CENTER -->
@@ -1394,13 +1400,39 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
           </div>
 
           <!-- DROP ZONE & LOAD ACTIONS -->
-          <div style="width:280px; display:flex; flex-direction:column; gap:12px; border-left:1px solid var(--border); padding-left:16px;">
+          <div style="width:320px; display:flex; flex-direction:column; gap:12px; border-left:1px solid var(--border); padding-left:16px; overflow-y:auto;">
             <div class="api-label" style="color:var(--gold)">Option 2: Drag & Drop scene file</div>
             <div class="drop-zone" id="dropZone">
               <span style="font-size:24px;">📁</span>
-              <span style="font-size:10px; font-family:\'JetBrains Mono\',monospace; color:var(--muted)">Drag & Drop JSON, CSV, or TXT scene list here</span>
+              <span style="font-size:10px; font-family:\'JetBrains Mono\',monospace; color:var(--muted)">Drag & Drop JSON, CSV, or TXT</span>
               <input type="file" id="fileInput" accept=".json,.csv,.txt" style="display:none;" onchange="handleFileSelect(event)">
-              <button class="btn btn-ghost" style="padding:4px 10px; font-size:8px;" onclick="document.getElementById('fileInput').click()">Browse Local Files</button>
+              <button class="btn btn-ghost" style="padding:4px 10px; font-size:8px;" onclick="document.getElementById('fileInput').click()">Browse Files</button>
+            </div>
+
+            <!-- SUBSTACK IMPORT -->
+            <div style="border-top:1px solid var(--border); padding-top:10px;">
+              <div class="api-label" style="color:#ff6719;">Option 3: 📰 Substack Article Import</div>
+              <textarea id="substackArticleInput" rows="3" style="width:100%; background:var(--dim); border:1px solid var(--border); color:var(--text); padding:6px; font-size:9px; border-radius:4px; resize:vertical; font-family:\'JetBrains Mono\',monospace;" placeholder="Paste your Substack article text here..."></textarea>
+              <select id="substackThemeOverride" style="width:100%; margin-top:4px; background:var(--dim); border:1px solid var(--border); color:var(--muted); padding:3px; font-size:9px; border-radius:3px;">
+                <option value="auto">🎯 Auto-Detect Theme</option>
+                <option value="hell-on-wheels">🚂 Hell on Wheels (AFC West)</option>
+                <option value="game-of-thrones">❄️ Game of Thrones (NFC North)</option>
+                <option value="black-sails">🏴‍☠️ Black Sails (NFC South)</option>
+                <option value="the-revenant">🐻 The Revenant (AFC North)</option>
+                <option value="texas-rising">🤠 Texas Rising (AFC South)</option>
+                <option value="the-departed">🔫 The Departed (AFC East)</option>
+                <option value="we-own-this-city">🏙️ We Own This City (NFC East)</option>
+                <option value="the-audacity">💥 The Audacity (NFC West)</option>
+              </select>
+              <select id="substackExportPlatform" style="width:100%; margin-top:4px; background:var(--dim); border:1px solid var(--border); color:var(--muted); padding:3px; font-size:9px; border-radius:3px;">
+                <option value="all">📱 All Platforms</option>
+                <option value="youtube">▶️ YouTube (16:9)</option>
+                <option value="tiktok">🎵 TikTok / Reels (9:16)</option>
+                <option value="instagram">📷 Instagram (1:1)</option>
+                <option value="facebook">👤 Facebook (16:9)</option>
+              </select>
+              <button class="btn btn-pri" style="width:100%; margin-top:6px; background:linear-gradient(135deg, #ff6719, #e05500);" onclick="importSubstackArticle()">📰 Parse Article → Scenes</button>
+              <div id="substackStatus" style="font-size:9px; color:var(--muted); margin-top:4px;"></div>
             </div>
 
             <div style="margin-top:auto; display:flex; flex-direction:column; gap:8px;">
@@ -1649,6 +1681,13 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
           { id: 'luma/dream-machine', label: 'Luma Dream Machine' },
           { id: 'custom', label: '(Custom Replicate model path...)' }
         ]
+      },
+      'colab-local': {
+        name: 'Colab Free (LTX-Video)',
+        ph: 'https://xxxx.ngrok-free.app',
+        models: [
+          { id: 'ltx-video', label: 'LTX-Video (Free T4 GPU)' }
+        ]
       }
     };
 
@@ -1658,6 +1697,7 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
       pika: { name: 'Pika', color: '#f97316', icon: '⚡', free: true, url: 'https://pika.art' },
       hailuo: { name: 'HaiLuo AI', color: '#22c55e', icon: '👤', free: true, url: 'https://hailuoai.video' },
       googlevids: { name: 'Google Vids', color: '#3b82f6', icon: '🔵', free: true, url: 'https://vids.google.com' },
+      colab: { name: 'Google Colab (Free)', color: '#22d3ee', icon: '🧪', free: true, url: 'https://colab.research.google.com' },
       invideo: { name: 'InVideo AI', color: '#f59e0b', icon: '📹', free: true, url: 'https://invideo.io' },
       runway: { name: 'Runway', color: '#ef4444', icon: '🚀', free: false, url: 'https://runwayml.com' },
       heygen: { name: 'HeyGen', color: '#ec4899', icon: '🗣️', free: false, url: 'https://www.heygen.com' },
@@ -1670,6 +1710,7 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
       pika: 'Pika: stylized visual descriptions, effect keywords (glitch, particles, bloom), dynamic motion direction. Keep under 4s for best results.',
       hailuo: 'HaiLuo: focus on human subjects — facial expressions, body language, emotional state, skin detail, natural movement, face lighting. Very strong on close-ups.',
       googlevids: 'Google Vids/Veo: cinematic scale, landscape establishing shots, wide angles, epic scope. Highest quality — use for hero shots only. Very responsive to cinematography language.',
+      colab: 'Google Colab (Free): runs LTX-Video on a free T4 GPU via your Colab notebook. Unlimited generation, 512x320 resolution, 1-7 second clips. Select "Colab Free" as your Video Provider above and paste the ngrok URL from the notebook. Great for drafts and scene testing.',
       invideo: 'InVideo: describe as a full video brief — topic, visual style needed, stock footage direction, voiceover tone, background music mood, pacing.',
       runway: 'Runway Gen-4: pipe-separated keywords work best — subject | action | style | camera movement | lighting | quality tier. Technical cinematography terms get excellent results.',
       heygen: 'HeyGen: provide exact avatar script in quotes. Then specify: avatar style, background setting, delivery tone. This is talking-head only — write dialogue, not visual description.',
@@ -1755,6 +1796,27 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
     function updateVideoModels() {
       videoProvider = document.getElementById('videoProviderSelect').value;
       const sel = document.getElementById('videoModelSelect');
+
+      if (videoProvider === 'colab-local') {
+        document.getElementById('videoKeyLabel').textContent = 'Colab URL';
+        document.getElementById('videoApiKeyInput').placeholder = 'https://xxxx.ngrok-free.app';
+        document.getElementById('videoApiKeyInput').type = 'text';
+        document.getElementById('klingSkLabel').style.display = 'none';
+        document.getElementById('klingSecretKeyInput').style.display = 'none';
+        sel.innerHTML = '<option value="ltx-video">LTX-Video (Free T4 GPU)</option>';
+        const saved = localStorage.getItem('twain_video_key_colab-local');
+        if (saved) {
+          document.getElementById('videoApiKeyInput').value = saved;
+          videoApiKey = saved;
+          setVideoStatus(true);
+        } else {
+          document.getElementById('videoApiKeyInput').value = '';
+          videoApiKey = '';
+          setVideoStatus(false);
+        }
+        return;
+      }
+      document.getElementById('videoApiKeyInput').type = 'password';
       
       if (videoProvider === 'kling-direct') {
         document.getElementById('videoKeyLabel').textContent = 'Access Key';
@@ -2084,6 +2146,89 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
           statusUrl: null
         };
       });
+    }
+
+    // ── SUBSTACK ARTICLE IMPORT ──────────────────────────────────────
+    const PLATFORM_ASPECTS = {
+      youtube: '16:9',
+      tiktok: '9:16',
+      instagram: '1:1',
+      facebook: '16:9',
+      all: '16:9'
+    };
+
+    async function importSubstackArticle() {
+      const articleText = document.getElementById('substackArticleInput').value.trim();
+      if (!articleText) {
+        alert('Paste your Substack article text first.');
+        return;
+      }
+
+      const themeOverride = document.getElementById('substackThemeOverride').value;
+      const exportPlatform = document.getElementById('substackExportPlatform').value;
+      const statusEl = document.getElementById('substackStatus');
+      statusEl.textContent = '⏳ Parsing article through the theme engine...';
+
+      if (hasProxyBackend) {
+        // Use backend parser
+        try {
+          const res = await fetch(apiBase + '/api/substack/parse', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              content: articleText,
+              theme: themeOverride !== 'auto' ? themeOverride : undefined
+            })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Parse failed');
+
+          statusEl.textContent = `✅ ${data.theme?.name || 'Theme'} detected — ${data.scenes?.length || 0} scenes extracted`;
+          
+          // Convert backend scenes to Director-X format
+          const aspect = PLATFORM_ASPECTS[exportPlatform] || '16:9';
+          const backendScenes = (data.scenes || []).map((s, idx) => ({
+            num: s.sceneNumber || (idx + 1),
+            type: s.type || 'General',
+            desc: s.visualPrompt || s.description || 'No description',
+            voiceover: s.voiceover || '',
+            duration: s.duration || 4,
+            mood: s.mood || 'Cinematic',
+            shotType: s.shotType || 'Medium',
+            platform: 'kling',
+            exportAspect: aspect,
+            exportQuality: 'standard'
+          }));
+
+          // Put into paste area as JSON so parsePastedScenes can pick it up
+          document.getElementById('scenePasteArea').value = JSON.stringify(backendScenes, null, 2);
+          triggerParseAndLoad();
+
+          addMsg('director', `📰 **Substack Article Imported!**\n\n🎬 Theme: **${data.theme?.name || 'Auto-detected'}**\n📊 ${backendScenes.length} scenes extracted\n📐 Export format: **${exportPlatform.toUpperCase()}** (${aspect})\n\nScenes are loaded in the Router. Review prompts, then hit Run Concurrent Batch!`);
+        } catch (err) {
+          statusEl.textContent = '❌ ' + err.message;
+          console.error('Substack parse error:', err);
+        }
+      } else {
+        // Client-side fallback: basic paragraph splitting
+        statusEl.textContent = '⚠️ Backend not connected. Using basic paragraph split...';
+        const paragraphs = articleText.split(/\n\n+/).filter(p => p.trim().length > 30);
+        const aspect = PLATFORM_ASPECTS[exportPlatform] || '16:9';
+        const fallbackScenes = paragraphs.slice(0, 20).map((p, idx) => ({
+          num: idx + 1,
+          type: idx === 0 ? 'Hook' : idx === paragraphs.length - 1 ? 'CTA' : 'General',
+          desc: p.trim().substring(0, 300),
+          voiceover: '',
+          duration: 4,
+          mood: 'Cinematic',
+          shotType: 'Medium',
+          platform: 'kling',
+          exportAspect: aspect
+        }));
+        document.getElementById('scenePasteArea').value = JSON.stringify(fallbackScenes, null, 2);
+        triggerParseAndLoad();
+        statusEl.textContent = `✅ ${fallbackScenes.length} scenes (basic split — connect backend for theme engine)`;
+      }
     }
 
     // ── DRAG & DROP & UPLOAD EVENT HANDLERS ───────────────────────────
@@ -2496,18 +2641,24 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
           }
 
           if (hasProxyBackend) {
-            const res = await fetch(apiBase + '/api/video/submit', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
+            const submitPayload = {
                 provider: isAvatarPlatform ? 'fal-ai' : videoProvider,
                 model: model,
                 apiKey: videoApiKey,
                 secretKey: videoProvider === 'kling-direct' ? videoSecretKey : null,
                 prompt: promptText,
                 duration: scene.duration || 4,
-                input: submitInputPayload
-              })
+                input: submitInputPayload,
+                aspectRatio: scene.exportAspect || '16:9',
+                quality: scene.exportQuality || 'standard'
+            };
+            if (videoProvider === 'colab-local') {
+              submitPayload.colabUrl = videoApiKey; // For colab, the "key" field stores the ngrok URL
+            }
+            const res = await fetch(apiBase + '/api/video/submit', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(submitPayload)
             });
             submitResponse = await res.json();
             if (!res.ok) throw new Error(submitResponse.error || 'Submission failed');
@@ -2567,17 +2718,21 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
             try {
               let statusData;
               if (hasProxyBackend) {
-                const res = await fetch(apiBase + '/api/video/status', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
+                const statusPayload = {
                     provider: isAvatarPlatform ? 'fal-ai' : videoProvider,
                     requestId: scene.requestId,
                     model: model,
                     apiKey: videoApiKey,
                     secretKey: videoProvider === 'kling-direct' ? videoSecretKey : null,
                     statusUrl: scene.statusUrl
-                  })
+                };
+                if (videoProvider === 'colab-local') {
+                  statusPayload.colabUrl = videoApiKey;
+                }
+                const res = await fetch(apiBase + '/api/video/status', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(statusPayload)
                 });
                 statusData = await res.json();
                 if (!res.ok) throw new Error(statusData.error || 'Status check error');
