@@ -194,11 +194,180 @@ async function klingStatus({ requestId, apiKey, secretKey }) {
   return { status: 'IN_PROGRESS', logs: [] };
 }
 
+// ── Gemini Omni via MuAPI ─────────────────────────────────────────────
+
+async function geminiOmniSubmit({ apiKey, prompt, duration, aspectRatio, resolution, audioIds, characterIds, imageUrls, seed }) {
+  // Determine endpoint based on whether images are provided
+  let endpoint = 'gemini-omni-text-to-video';
+  const body = {
+    prompt,
+    duration: duration || 8,
+    aspect_ratio: aspectRatio || '16:9',
+    resolution: resolution || '1080p'
+  };
+
+  if (imageUrls && imageUrls.length > 0) {
+    endpoint = 'gemini-omni-image-to-video';
+    body.image_urls = imageUrls;
+  }
+
+  if (audioIds && audioIds.length > 0) {
+    body.audio_ids = audioIds;
+  }
+  if (characterIds && characterIds.length > 0) {
+    body.character_ids = characterIds;
+  }
+  if (seed && seed >= 0) {
+    body.seed = seed;
+  }
+
+  const res = await fetch(`https://api.muapi.ai/api/v1/${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    if (res.status === 401) throw new Error('Invalid MuAPI key — check your key at muapi.ai');
+    if (res.status === 402) throw new Error('Insufficient MuAPI credits — top up at muapi.ai/topup');
+    if (res.status === 429) throw new Error('MuAPI rate limited — reduce request frequency');
+    throw new Error(data.message || data.detail || JSON.stringify(data));
+  }
+
+  return {
+    requestId: data.request_id,
+    statusUrl: `https://api.muapi.ai/api/v1/predictions/${data.request_id}/result`,
+    provider: 'gemini-omni',
+    model: endpoint
+  };
+}
+
+async function geminiOmniStatus({ requestId, apiKey }) {
+  const res = await fetch(`https://api.muapi.ai/api/v1/predictions/${requestId}/result`, {
+    headers: { 'x-api-key': apiKey }
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || JSON.stringify(data));
+  }
+
+  if (data.status === 'completed') {
+    const videoUrl = data.outputs?.[0] || null;
+    return { status: 'COMPLETED', videoUrl };
+  }
+
+  if (data.status === 'failed' || data.status === 'cancelled') {
+    return { status: 'FAILED', error: `Job ${requestId} ended with status: ${data.status}` };
+  }
+
+  return { status: 'IN_PROGRESS', logs: [] };
+}
+
+// ── Gemini Omni — Video Edit ─────────────────────────────────────────
+
+async function geminiOmniEditSubmit({ apiKey, prompt, videoUrl, duration, aspectRatio, resolution, trimStart, trimEnd, audioIds, characterIds, imageUrls, seed }) {
+  const body = {
+    prompt,
+    duration: duration || 8,
+    aspect_ratio: aspectRatio || '16:9',
+    resolution: resolution || '1080p',
+    trim_start: trimStart || 0,
+    trim_end: trimEnd || 8
+  };
+
+  if (videoUrl) body.video_url = videoUrl;
+  if (imageUrls && imageUrls.length > 0) body.image_urls = imageUrls;
+  if (audioIds && audioIds.length > 0) body.audio_ids = audioIds;
+  if (characterIds && characterIds.length > 0) body.character_ids = characterIds;
+  if (seed && seed >= 0) body.seed = seed;
+
+  const res = await fetch('https://api.muapi.ai/api/v1/gemini-omni-video-edit', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    if (res.status === 401) throw new Error('Invalid MuAPI key');
+    if (res.status === 402) throw new Error('Insufficient MuAPI credits — muapi.ai/topup');
+    throw new Error(data.message || JSON.stringify(data));
+  }
+
+  return {
+    requestId: data.request_id,
+    statusUrl: `https://api.muapi.ai/api/v1/predictions/${data.request_id}/result`,
+    provider: 'gemini-omni',
+    model: 'gemini-omni-video-edit'
+  };
+}
+
+// ── Gemini Omni — Character Creation ─────────────────────────────────
+
+async function geminiOmniCreateCharacter({ apiKey, imageUrl, descriptions, characterName, audioIds }) {
+  const body = {
+    images_list: [imageUrl],
+    descriptions
+  };
+  if (characterName) body.character_name = characterName;
+  if (audioIds && audioIds.length > 0) body.audio_ids = audioIds;
+
+  const res = await fetch('https://api.muapi.ai/api/v1/gemini-omni-character', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || JSON.stringify(data));
+  }
+
+  // Poll for result
+  const requestId = data.request_id;
+  let attempts = 0;
+  while (attempts < 90) { // 15min max
+    await new Promise(r => setTimeout(r, 10000));
+    const pollRes = await fetch(`https://api.muapi.ai/api/v1/predictions/${requestId}/result`, {
+      headers: { 'x-api-key': apiKey }
+    });
+    const pollData = await pollRes.json();
+    if (pollData.status === 'completed') {
+      try {
+        const charData = JSON.parse(pollData.outputs[0]);
+        return {
+          characterId: charData.characterId,
+          characterName: charData.characterName || characterName,
+          characterImage: charData.image || ''
+        };
+      } catch {
+        return { characterId: pollData.outputs[0] };
+      }
+    }
+    if (pollData.status === 'failed') throw new Error('Character creation failed');
+    attempts++;
+  }
+  throw new Error('Character creation timed out');
+}
+
 // ── Route Handlers ───────────────────────────────────────────────────
 
 export async function handleVideoSubmit(req, res) {
   try {
-    const { provider, model, apiKey, secretKey, prompt, duration, input } = req.body;
+    const { provider, model, apiKey, secretKey, prompt, duration, input,
+            aspectRatio, resolution, audioIds, characterIds, imageUrls, seed,
+            videoUrl, trimStart, trimEnd, descriptions, characterName } = req.body;
 
     if (!provider || !apiKey) {
       return res.status(400).json({ error: 'Missing required fields: provider, apiKey' });
@@ -216,6 +385,15 @@ export async function handleVideoSubmit(req, res) {
       case 'kling-direct':
         result = await klingSubmit({ apiKey, secretKey, prompt, duration });
         break;
+      case 'gemini-omni':
+        result = await geminiOmniSubmit({ apiKey, prompt, duration, aspectRatio, resolution, audioIds, characterIds, imageUrls, seed });
+        break;
+      case 'gemini-omni-edit':
+        result = await geminiOmniEditSubmit({ apiKey, prompt, videoUrl, duration, aspectRatio, resolution, trimStart, trimEnd, audioIds, characterIds, imageUrls, seed });
+        break;
+      case 'gemini-omni-character':
+        result = await geminiOmniCreateCharacter({ apiKey, imageUrl: imageUrls?.[0], descriptions, characterName, audioIds });
+        return res.json(result);
       default:
         return res.status(400).json({ error: `Unknown video provider: ${provider}` });
     }
@@ -246,6 +424,10 @@ export async function handleVideoStatus(req, res) {
         break;
       case 'kling-direct':
         result = await klingStatus({ requestId, apiKey, secretKey });
+        break;
+      case 'gemini-omni':
+      case 'gemini-omni-edit':
+        result = await geminiOmniStatus({ requestId, apiKey });
         break;
       default:
         return res.status(400).json({ error: `Unknown video provider: ${provider}` });
