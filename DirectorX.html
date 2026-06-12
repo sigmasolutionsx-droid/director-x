@@ -1371,6 +1371,8 @@
         <button class="tab-btn" onclick="switchTab('router',this)">Batch Router Dashboard</button>
         <button class="tab-btn" onclick="switchTab('storyboard',this)">Storyboard Gallery</button>
         <button class="tab-btn" onclick="switchTab('timeline',this)">Timeline & Pacing</button>
+        <button class="tab-btn" onclick="switchTab('voice',this)">🎙️ Voice</button>
+        <button class="tab-btn" onclick="switchTab('seo',this)">🔍 SEO & Export</button>
       </div>
 
       <!-- UPLOAD & PARSE -->
@@ -1519,6 +1521,146 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
           </div>
         </div>
       </div>
+
+      <!-- VOICE SYNTHESIS -->
+      <div class="tab-content" id="tab-voice">
+        <div style="padding:16px; display:flex; flex-direction:column; gap:16px; height:100%; overflow-y:auto;">
+          <div style="display:flex; gap:16px;">
+            <!-- Voice Character Select -->
+            <div style="flex:1; background:var(--dim); border:1px solid var(--border); border-radius:6px; padding:12px;">
+              <div class="api-label" style="color:var(--gold); margin-bottom:8px;">🎙️ Character Voice Presets</div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <div class="voice-preset-card" onclick="selectVoicePreset('adam')" id="vp-adam" style="flex:1; min-width:150px; padding:10px; background:rgba(212,164,55,0.1); border:1px solid var(--border); border-radius:4px; cursor:pointer; transition:all 0.2s;">
+                  <div style="font-weight:bold; color:var(--gold); font-size:11px;">🎩 ADAM — The Narrator</div>
+                  <div style="font-size:9px; color:var(--muted); margin-top:4px;">Smooth, sharp, educated villain. Cold authority.</div>
+                  <div style="font-size:8px; color:var(--accent); margin-top:4px;">Stability: 15% · Clarity: 65%</div>
+                  <div style="font-size:8px; color:var(--muted);">Best for: The Departed, We Own This City, The Audacity</div>
+                </div>
+                <div class="voice-preset-card" onclick="selectVoicePreset('sam')" id="vp-sam" style="flex:1; min-width:150px; padding:10px; background:rgba(197,48,48,0.1); border:1px solid var(--border); border-radius:4px; cursor:pointer; transition:all 0.2s;">
+                  <div style="font-weight:bold; color:#E53E3E; font-size:11px;">🗡️ SAM — The Enforcer</div>
+                  <div style="font-size:9px; color:var(--muted); margin-top:4px;">Sinister, slight rasp. Dangerous undercurrent.</div>
+                  <div style="font-size:8px; color:var(--accent); margin-top:4px;">Stability: 35% · Clarity: 50%</div>
+                  <div style="font-size:8px; color:var(--muted);">Best for: The Revenant, Game of Thrones</div>
+                </div>
+                <div class="voice-preset-card" onclick="selectVoicePreset('bill')" id="vp-bill" style="flex:1; min-width:150px; padding:10px; background:rgba(139,105,20,0.1); border:1px solid var(--border); border-radius:4px; cursor:pointer; transition:all 0.2s;">
+                  <div style="font-weight:bold; color:#C05621; font-size:11px;">🤠 BILL — The Frontier Voice</div>
+                  <div style="font-size:9px; color:var(--muted); margin-top:4px;">Rougher, frontier-worn. Gravelly authenticity.</div>
+                  <div style="font-size:8px; color:var(--accent); margin-top:4px;">Stability: 15% · Clarity: 45%</div>
+                  <div style="font-size:8px; color:var(--muted);">Best for: Hell on Wheels, Texas Rising, Black Sails</div>
+                </div>
+              </div>
+              <div style="margin-top:10px; font-size:9px; color:var(--muted);" id="voicePresetStatus">Select a character preset or let the theme auto-assign</div>
+            </div>
+
+            <!-- Voice Controls -->
+            <div style="width:280px; background:var(--dim); border:1px solid var(--border); border-radius:6px; padding:12px;">
+              <div class="api-label" style="color:var(--gold); margin-bottom:8px;">⚙️ Voice Settings</div>
+              <label style="font-size:9px; color:var(--muted);">Provider</label>
+              <select id="voiceProviderSelect" style="width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:4px; font-size:10px; border-radius:3px; margin-bottom:8px;">
+                <option value="elevenlabs">ElevenLabs (Best Quality)</option>
+                <option value="fal-kokoro">Kokoro via Fal.ai (Free)</option>
+                <option value="neets">Neets.ai</option>
+              </select>
+
+              <label style="font-size:9px; color:var(--muted);">ElevenLabs API Key</label>
+              <input type="password" id="voiceApiKeyInput" class="api-key-input" placeholder="sk_xxxx..." style="width:100%; margin-bottom:8px; font-size:10px;">
+
+              <label style="font-size:9px; color:var(--muted);">Stability Override</label>
+              <input type="range" id="voiceStabilitySlider" min="0" max="100" value="15" style="width:100%;" oninput="document.getElementById('voiceStabVal').textContent=this.value+'%'">
+              <span id="voiceStabVal" style="font-size:9px; color:var(--accent);">15%</span>
+
+              <label style="font-size:9px; color:var(--muted);">Clarity Override</label>
+              <input type="range" id="voiceClaritySlider" min="0" max="100" value="65" style="width:100%;" oninput="document.getElementById('voiceClarVal').textContent=this.value+'%'">
+              <span id="voiceClarVal" style="font-size:9px; color:var(--accent);">65%</span>
+
+              <button class="btn btn-pri" style="width:100%; margin-top:10px;" onclick="generateAllVoiceovers()">🎙️ Generate All Voiceovers</button>
+              <button class="btn btn-ghost" style="width:100%; margin-top:4px;" onclick="previewVoice()">▶️ Preview Selected Voice</button>
+              <div id="voiceGenStatus" style="font-size:9px; color:var(--muted); margin-top:6px;"></div>
+            </div>
+          </div>
+
+          <!-- Voice Queue -->
+          <div style="flex:1; background:var(--dim); border:1px solid var(--border); border-radius:6px; padding:12px; overflow-y:auto;">
+            <div class="api-label" style="color:var(--gold); margin-bottom:8px;">📋 Scene Voiceover Queue</div>
+            <div id="voiceQueueList" style="font-size:9px; color:var(--muted);">
+              Load scenes first, then generate voiceovers here. Each scene's voiceover text will be sent to the selected voice provider.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEO & EXPORT -->
+      <div class="tab-content" id="tab-seo">
+        <div style="padding:16px; display:flex; flex-direction:column; gap:16px; height:100%; overflow-y:auto;">
+          <!-- SEO Config Bar -->
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <div class="api-label" style="color:var(--gold);">🔍 SEO Metadata Engine</div>
+            <input type="text" id="seoSubstackUrl" class="api-key-input" placeholder="https://riseandclaim.substack.com/p/your-article" style="flex:1; min-width:200px; font-size:10px;">
+            <button class="btn btn-pri" onclick="generateSEOMetadata()" style="background:linear-gradient(135deg, #ff6719, #e05500);">🔍 Generate SEO</button>
+          </div>
+
+          <!-- Platform Cards -->
+          <div style="display:flex; gap:12px; flex-wrap:wrap; flex:1; overflow-y:auto;">
+            <!-- YouTube -->
+            <div class="seo-platform-card" style="flex:1; min-width:280px; background:var(--dim); border:1px solid #c4302b; border-radius:6px; padding:12px; overflow-y:auto;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <div style="font-weight:bold; color:#c4302b; font-size:11px;">▶️ YouTube</div>
+                <div style="display:flex; gap:4px;">
+                  <button class="btn btn-ghost" style="padding:2px 6px; font-size:8px;" onclick="copySEOField('youtube')">📋 Copy All</button>
+                  <button class="btn btn-ghost" style="padding:2px 6px; font-size:8px;" onclick="downloadSEO('youtube')">💾 Save</button>
+                </div>
+              </div>
+              <div id="seo-youtube" style="font-size:9px; color:var(--muted);">Generate SEO to see YouTube metadata</div>
+            </div>
+
+            <!-- TikTok -->
+            <div class="seo-platform-card" style="flex:1; min-width:280px; background:var(--dim); border:1px solid #ff0050; border-radius:6px; padding:12px; overflow-y:auto;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <div style="font-weight:bold; color:#ff0050; font-size:11px;">🎵 TikTok</div>
+                <div style="display:flex; gap:4px;">
+                  <button class="btn btn-ghost" style="padding:2px 6px; font-size:8px;" onclick="copySEOField('tiktok')">📋 Copy</button>
+                  <button class="btn btn-ghost" style="padding:2px 6px; font-size:8px;" onclick="downloadSEO('tiktok')">💾 Save</button>
+                </div>
+              </div>
+              <div id="seo-tiktok" style="font-size:9px; color:var(--muted);">Generate SEO to see TikTok caption</div>
+            </div>
+
+            <!-- Instagram -->
+            <div class="seo-platform-card" style="flex:1; min-width:280px; background:var(--dim); border:1px solid #C13584; border-radius:6px; padding:12px; overflow-y:auto;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <div style="font-weight:bold; color:#C13584; font-size:11px;">📷 Instagram</div>
+                <div style="display:flex; gap:4px;">
+                  <button class="btn btn-ghost" style="padding:2px 6px; font-size:8px;" onclick="copySEOField('instagram')">📋 Copy</button>
+                  <button class="btn btn-ghost" style="padding:2px 6px; font-size:8px;" onclick="downloadSEO('instagram')">💾 Save</button>
+                </div>
+              </div>
+              <div id="seo-instagram" style="font-size:9px; color:var(--muted);">Generate SEO to see Instagram metadata</div>
+            </div>
+
+            <!-- Facebook -->
+            <div class="seo-platform-card" style="flex:1; min-width:280px; background:var(--dim); border:1px solid #1877F2; border-radius:6px; padding:12px; overflow-y:auto;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <div style="font-weight:bold; color:#1877F2; font-size:11px;">👤 Facebook</div>
+                <div style="display:flex; gap:4px;">
+                  <button class="btn btn-ghost" style="padding:2px 6px; font-size:8px;" onclick="copySEOField('facebook')">📋 Copy</button>
+                  <button class="btn btn-ghost" style="padding:2px 6px; font-size:8px;" onclick="downloadSEO('facebook')">💾 Save</button>
+                </div>
+              </div>
+              <div id="seo-facebook" style="font-size:9px; color:var(--muted);">Generate SEO to see Facebook metadata</div>
+            </div>
+          </div>
+
+          <!-- Export Actions -->
+          <div style="display:flex; gap:8px; flex-wrap:wrap; border-top:1px solid var(--border); padding-top:12px;">
+            <button class="btn btn-pri" onclick="exportAllVideos()" style="flex:1;">📦 Export All Videos (ZIP)</button>
+            <button class="btn btn-pri" onclick="exportSEOPackage()" style="flex:1; background:linear-gradient(135deg, #ff6719, #e05500);">📰 Export SEO Package (JSON)</button>
+            <button class="btn btn-ghost" onclick="downloadVideoForPlatform('youtube')" style="flex:1;">▶️ Download YT (16:9)</button>
+            <button class="btn btn-ghost" onclick="downloadVideoForPlatform('tiktok')" style="flex:1;">🎵 Download TikTok (9:16)</button>
+            <button class="btn btn-ghost" onclick="downloadVideoForPlatform('instagram')" style="flex:1;">📷 Download IG (1:1)</button>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- CHAT -->
@@ -2228,6 +2370,327 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
         document.getElementById('scenePasteArea').value = JSON.stringify(fallbackScenes, null, 2);
         triggerParseAndLoad();
         statusEl.textContent = `✅ ${fallbackScenes.length} scenes (basic split — connect backend for theme engine)`;
+      }
+    }
+
+
+    // ── VOICE SYNTHESIS CONTROLS ─────────────────────────────────────
+    let selectedVoicePreset = null;
+
+    const VOICE_PRESETS = {
+      adam: { stability: 15, clarity: 65, color: '#D4A437' },
+      sam:  { stability: 35, clarity: 50, color: '#E53E3E' },
+      bill: { stability: 15, clarity: 45, color: '#C05621' }
+    };
+
+    const THEME_VOICE_MAP = {
+      'hell-on-wheels': 'bill',
+      'the-revenant': 'sam',
+      'texas-rising': 'bill',
+      'the-departed': 'adam',
+      'game-of-thrones': 'sam',
+      'black-sails': 'bill',
+      'we-own-this-city': 'adam',
+      'the-audacity': 'adam'
+    };
+
+    function selectVoicePreset(preset) {
+      selectedVoicePreset = preset;
+      const p = VOICE_PRESETS[preset];
+      document.getElementById('voiceStabilitySlider').value = p.stability;
+      document.getElementById('voiceStabVal').textContent = p.stability + '%';
+      document.getElementById('voiceClaritySlider').value = p.clarity;
+      document.getElementById('voiceClarVal').textContent = p.clarity + '%';
+      // Highlight selected card
+      document.querySelectorAll('.voice-preset-card').forEach(c => c.style.borderColor = 'var(--border)');
+      const el = document.getElementById('vp-' + preset);
+      if (el) el.style.borderColor = p.color;
+      document.getElementById('voicePresetStatus').textContent = '✅ ' + preset.toUpperCase() + ' selected — settings applied';
+    }
+
+    async function previewVoice() {
+      const provider = document.getElementById('voiceProviderSelect').value;
+      const apiKey = document.getElementById('voiceApiKeyInput').value;
+      const text = 'The dust settles. But the story is far from over.';
+      const statusEl = document.getElementById('voiceGenStatus');
+
+      if (!hasProxyBackend) {
+        statusEl.textContent = '❌ Backend not connected — start the server first';
+        return;
+      }
+      if (provider === 'elevenlabs' && !apiKey) {
+        statusEl.textContent = '❌ Enter your ElevenLabs API key';
+        return;
+      }
+
+      statusEl.textContent = '⏳ Generating preview...';
+      try {
+        const res = await fetch(apiBase + '/api/voice/synthesize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            provider,
+            text,
+            character: selectedVoicePreset,
+            apiKey,
+            voiceSettings: {
+              stability: document.getElementById('voiceStabilitySlider').value / 100,
+              similarity_boost: document.getElementById('voiceClaritySlider').value / 100
+            }
+          })
+        });
+        const data = await res.json();
+        if (data.audioUrl) {
+          const audio = new Audio(data.audioUrl);
+          audio.play();
+          statusEl.textContent = '🔊 Playing preview...';
+        } else {
+          statusEl.textContent = '❌ No audio returned: ' + (data.error || 'unknown');
+        }
+      } catch (err) {
+        statusEl.textContent = '❌ ' + err.message;
+      }
+    }
+
+    async function generateAllVoiceovers() {
+      const provider = document.getElementById('voiceProviderSelect').value;
+      const apiKey = document.getElementById('voiceApiKeyInput').value;
+      const statusEl = document.getElementById('voiceGenStatus');
+      const listEl = document.getElementById('voiceQueueList');
+
+      if (!scenes || scenes.length === 0) {
+        statusEl.textContent = '❌ No scenes loaded — parse scenes first';
+        return;
+      }
+      if (!hasProxyBackend) {
+        statusEl.textContent = '❌ Backend not connected';
+        return;
+      }
+
+      statusEl.textContent = '⏳ Generating voiceovers for ' + scenes.length + ' scenes...';
+      listEl.innerHTML = '';
+
+      for (let i = 0; i < scenes.length; i++) {
+        const scene = scenes[i];
+        const voText = scene.voiceover || scene.desc?.slice(0, 300) || '';
+        if (!voText) continue;
+
+        const row = document.createElement('div');
+        row.style.cssText = 'padding:6px; margin-bottom:4px; background:rgba(0,0,0,0.2); border-radius:3px; display:flex; align-items:center; gap:8px;';
+        row.innerHTML = '<span style="color:var(--gold);">Scene ' + scene.num + '</span><span style="flex:1; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + voText.slice(0, 80) + '...</span><span class="vo-status" style="color:var(--accent);">⏳</span>';
+        listEl.appendChild(row);
+
+        try {
+          const res = await fetch(apiBase + '/api/voice/synthesize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              provider, text: voText,
+              character: selectedVoicePreset,
+              apiKey,
+              voiceSettings: {
+                stability: document.getElementById('voiceStabilitySlider').value / 100,
+                similarity_boost: document.getElementById('voiceClaritySlider').value / 100
+              }
+            })
+          });
+          const data = await res.json();
+          if (data.audioUrl) {
+            scene.speechAudioUrl = data.audioUrl;
+            row.querySelector('.vo-status').textContent = '✅';
+            row.querySelector('.vo-status').style.color = '#48BB78';
+            // Add play button
+            const playBtn = document.createElement('button');
+            playBtn.textContent = '▶️';
+            playBtn.style.cssText = 'background:none; border:none; cursor:pointer; font-size:12px;';
+            playBtn.onclick = () => new Audio(data.audioUrl).play();
+            row.appendChild(playBtn);
+          } else {
+            row.querySelector('.vo-status').textContent = '❌';
+            row.querySelector('.vo-status').style.color = '#E53E3E';
+          }
+        } catch (err) {
+          row.querySelector('.vo-status').textContent = '❌ ' + err.message;
+          row.querySelector('.vo-status').style.color = '#E53E3E';
+        }
+        statusEl.textContent = '⏳ ' + (i + 1) + '/' + scenes.length + ' done...';
+      }
+      statusEl.textContent = '✅ All voiceovers generated!';
+    }
+
+    // ── SEO & EXPORT CONTROLS ────────────────────────────────────────
+    let seoData = null;
+
+    async function generateSEOMetadata() {
+      const substackUrl = document.getElementById('seoSubstackUrl').value || 'https://riseandclaim.substack.com';
+      
+      if (!scenes || scenes.length === 0) {
+        alert('Load scenes first, then generate SEO.');
+        return;
+      }
+
+      // Detect current theme from the Substack import selector
+      const themeSelect = document.getElementById('substackThemeOverride');
+      const theme = themeSelect ? themeSelect.value : 'auto';
+      
+      // Get title from first scene or page
+      const title = scenes[0]?.title || document.title || 'Rise and Claim';
+
+      if (hasProxyBackend) {
+        try {
+          const res = await fetch(apiBase + '/api/seo/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title,
+              theme: theme !== 'auto' ? theme : undefined,
+              scenes: scenes.map(s => ({ num: s.num, title: s.title || 'Scene ' + s.num, voiceover: s.voiceover })),
+              substackUrl,
+              platforms: ['youtube', 'tiktok', 'instagram', 'facebook']
+            })
+          });
+          seoData = await res.json();
+        } catch (err) {
+          // Fallback to client-side generation
+          seoData = generateSEOClientSide({ title, theme, scenes, substackUrl });
+        }
+      } else {
+        seoData = generateSEOClientSide({ title, theme, scenes, substackUrl });
+      }
+
+      renderSEOCards(seoData);
+      addMsg('director', '🔍 **SEO metadata generated** for all 4 platforms! Check the SEO & Export tab.');
+    }
+
+    function generateSEOClientSide({ title, theme, scenes, substackUrl }) {
+      const tags = ['NFL', 'football', 'RiseAndClaim', 'OwnYourGreatness', 'sports', 'NFLAnalysis'];
+      return {
+        platforms: {
+          youtube: {
+            title: title + ' | Rise and Claim NFL Breakdown',
+            description: '📰 Read the full article: ' + substackUrl + '\n\n' + title + '\n\n#NFL #RiseAndClaim #Football',
+            tags,
+            tagsString: tags.join(', ')
+          },
+          tiktok: {
+            caption: title + ' 🎬\n📰 Full story on Substack — link in bio\n\n' + tags.map(t => '#'+t).join(' ')
+          },
+          instagram: {
+            caption: title + ' 🎬\n📰 Full article on Substack — link in bio\n\n' + tags.map(t => '#'+t).join(' ')
+          },
+          facebook: {
+            caption: '🎬 NEW: ' + title + '\n\n📰 READ THE FULL ARTICLE: ' + substackUrl + '\n\n' + tags.slice(0,5).map(t => '#'+t).join(' ')
+          }
+        },
+        backlinks: {
+          substackUrl,
+          ctaVariants: ['📰 Read the full article: ' + substackUrl],
+          watermarkText: 'riseandclaim.substack.com'
+        }
+      };
+    }
+
+    function renderSEOCards(data) {
+      if (!data || !data.platforms) return;
+
+      // YouTube
+      const yt = data.platforms.youtube;
+      if (yt) {
+        document.getElementById('seo-youtube').innerHTML =
+          '<div style="margin-bottom:6px;"><strong style="color:#c4302b;">Title:</strong><br>' + escHTML(yt.title || '') + '</div>' +
+          '<div style="margin-bottom:6px;"><strong style="color:#c4302b;">Description:</strong><br><pre style="white-space:pre-wrap; font-size:8px; max-height:120px; overflow-y:auto; background:rgba(0,0,0,0.3); padding:6px; border-radius:3px;">' + escHTML(yt.description || '') + '</pre></div>' +
+          '<div><strong style="color:#c4302b;">Tags:</strong><br><span style="font-size:8px;">' + escHTML(yt.tagsString || (yt.tags||[]).join(', ')) + '</span></div>';
+      }
+
+      // TikTok
+      const tt = data.platforms.tiktok;
+      if (tt) {
+        document.getElementById('seo-tiktok').innerHTML =
+          '<div><strong style="color:#ff0050;">Caption:</strong><br><pre style="white-space:pre-wrap; font-size:8px; max-height:200px; overflow-y:auto; background:rgba(0,0,0,0.3); padding:6px; border-radius:3px;">' + escHTML(tt.caption || '') + '</pre></div>';
+      }
+
+      // Instagram
+      const ig = data.platforms.instagram;
+      if (ig) {
+        document.getElementById('seo-instagram').innerHTML =
+          '<div><strong style="color:#C13584;">Caption:</strong><br><pre style="white-space:pre-wrap; font-size:8px; max-height:200px; overflow-y:auto; background:rgba(0,0,0,0.3); padding:6px; border-radius:3px;">' + escHTML(ig.caption || '') + '</pre></div>';
+      }
+
+      // Facebook
+      const fb = data.platforms.facebook;
+      if (fb) {
+        document.getElementById('seo-facebook').innerHTML =
+          '<div><strong style="color:#1877F2;">Caption:</strong><br><pre style="white-space:pre-wrap; font-size:8px; max-height:200px; overflow-y:auto; background:rgba(0,0,0,0.3); padding:6px; border-radius:3px;">' + escHTML(fb.caption || '') + '</pre></div>';
+      }
+    }
+
+    function escHTML(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function copySEOField(platform) {
+      if (!seoData || !seoData.platforms[platform]) return alert('Generate SEO first');
+      const p = seoData.platforms[platform];
+      let text = '';
+      if (platform === 'youtube') {
+        text = 'TITLE:\n' + (p.title||'') + '\n\nDESCRIPTION:\n' + (p.description||'') + '\n\nTAGS:\n' + (p.tagsString || (p.tags||[]).join(', '));
+      } else {
+        text = p.caption || '';
+      }
+      navigator.clipboard.writeText(text).then(() => alert('Copied ' + platform + ' SEO!')).catch(() => alert('Copy failed'));
+    }
+
+    function downloadSEO(platform) {
+      if (!seoData || !seoData.platforms[platform]) return alert('Generate SEO first');
+      const blob = new Blob([JSON.stringify(seoData.platforms[platform], null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'seo_' + platform + '.json';
+      a.click();
+    }
+
+    function exportSEOPackage() {
+      if (!seoData) return alert('Generate SEO first');
+      const blob = new Blob([JSON.stringify(seoData, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'director_x_seo_package.json';
+      a.click();
+    }
+
+    async function exportAllVideos() {
+      // Collect all generated video URLs
+      const completed = scenes.filter(s => s.videoUrl);
+      if (completed.length === 0) return alert('No videos generated yet — run batch first');
+      
+      // Create a download manifest
+      const manifest = completed.map(s => ({
+        scene: s.num,
+        title: s.title || 'Scene ' + s.num,
+        videoUrl: s.videoUrl,
+        aspect: s.exportAspect || '16:9'
+      }));
+      
+      // Download each video
+      for (const item of manifest) {
+        const a = document.createElement('a');
+        a.href = item.videoUrl;
+        a.download = 'scene_' + String(item.scene).padStart(3, '0') + '.mp4';
+        a.target = '_blank';
+        a.click();
+        await new Promise(r => setTimeout(r, 500)); // Stagger downloads
+      }
+    }
+
+    function downloadVideoForPlatform(platform) {
+      const aspects = { youtube: '16:9', tiktok: '9:16', instagram: '1:1', facebook: '16:9' };
+      const completed = scenes.filter(s => s.videoUrl);
+      if (completed.length === 0) return alert('No videos generated yet');
+      
+      for (const s of completed) {
+        const a = document.createElement('a');
+        a.href = s.videoUrl;
+        a.download = platform + '_scene_' + String(s.num).padStart(3, '0') + '.mp4';
+        a.target = '_blank';
+        a.click();
       }
     }
 

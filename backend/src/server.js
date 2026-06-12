@@ -8,6 +8,7 @@ import { handleLLMCompletion } from './routes/llm.js';
 import { handleVideoSubmit, handleVideoStatus } from './routes/video.js';
 import { handleVoiceSynthesize } from './routes/voice.js';
 import { handleSubstackParse } from './routes/substack.js';
+import { handleSEOGenerate } from './routes/seo.js';
 
 dotenv.config();
 
@@ -22,21 +23,22 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
 // Serve DirectorX.html from parent directory
-app.use(express.static(join(__dirname, '..')));
+app.use(express.static(join(__dirname, '../..')));
 
 // ── Health Check ─────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     server: 'director-x-backend',
-    version: '1.0.0',
+    version: '1.1.0',
     endpoints: [
       'GET  /api/health',
       'POST /api/llm/completion',
       'POST /api/video/submit',
       'POST /api/video/status',
       'POST /api/voice/synthesize',
-      'POST /api/substack/parse'
+      'POST /api/substack/parse',
+      'POST /api/seo/generate'
     ]
   });
 });
@@ -50,6 +52,9 @@ app.post('/api/voice/synthesize', handleVoiceSynthesize);
 // ── Substack Article Parser (custom addition) ────────────────────────
 app.post('/api/substack/parse', handleSubstackParse);
 
+// ── SEO Metadata Engine ──────────────────────────────────────────────
+app.post('/api/seo/generate', handleSEOGenerate);
+
 // ── Error handler ────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error('Server error:', err);
@@ -57,7 +62,7 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n🎬 Director-X Backend running on http://localhost:${PORT}`);
+  console.log(`\n🎬 Director-X Backend v1.1.0 running on http://localhost:${PORT}`);
   console.log(`📡 Health: http://localhost:${PORT}/api/health`);
   console.log(`🎥 Place DirectorX.html in the project root to serve it\n`);
 });

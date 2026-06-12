@@ -2,11 +2,62 @@ import fetch from 'node-fetch';
 
 /**
  * Voice Synthesis Proxy
- * Handles: Fal Kokoro, ElevenLabs, Neets
+ * Handles: Fal Kokoro (free), ElevenLabs (w/ character presets), Neets
  * 
- * Request:  { provider, text, voiceId, apiKey, falApiKey? }
+ * Request:  { provider, text, voiceId, apiKey, falApiKey?, character?, voiceSettings? }
  * Response: { audioUrl }
  */
+
+// ── Director-X Character Voice Presets ───────────────────────────────
+// Jerry's ElevenLabs config — tuned per character archetype
+const CHARACTER_PRESETS = {
+  adam: {
+    voiceId: 'pNInz6obpgDQGcFmaJgB',   // Adam (ElevenLabs default)
+    label: 'Adam — The Narrator',
+    description: 'Smooth, sharp, educated villain. Cold authority.',
+    settings: {
+      stability: 0.15,          // 0-20% — very expressive
+      similarity_boost: 0.65,   // 60-70% clarity
+      style: 0.3,
+      use_speaker_boost: true
+    }
+  },
+  sam: {
+    voiceId: 'yoZ06aMxZJJ28mfd3POQ',   // Sam (ElevenLabs)
+    label: 'Sam — The Enforcer',
+    description: 'Sinister, slight rasp. Dangerous undercurrent.',
+    settings: {
+      stability: 0.35,          // 30-40%
+      similarity_boost: 0.50,   // 50% clarity
+      style: 0.25,
+      use_speaker_boost: true
+    }
+  },
+  bill: {
+    voiceId: 'pqHfZKP75CvOlQylNhV4',   // Bill (ElevenLabs)
+    label: 'Bill — The Frontier Voice',
+    description: 'Rougher, frontier-worn. Gravelly authenticity.',
+    settings: {
+      stability: 0.15,          // 10-20%
+      similarity_boost: 0.45,   // 40-50% clarity
+      style: 0.35,
+      use_speaker_boost: true
+    }
+  }
+};
+
+// ── Theme-to-Voice Mapping ───────────────────────────────────────────
+// Each show theme defaults to a specific narrator voice
+const THEME_VOICE_MAP = {
+  'hell-on-wheels':     'bill',    // Frontier-worn for railroad frontier
+  'the-revenant':       'sam',     // Sinister rasp for frozen wilderness
+  'texas-rising':       'bill',    // Rough frontier for Texas revolution
+  'the-departed':       'adam',    // Sharp, educated for Boston noir
+  'game-of-thrones':    'sam',     // Cold, dangerous for ice walls
+  'black-sails':        'bill',    // Weathered for pirate seas
+  'we-own-this-city':   'adam',    // Sharp authority for city streets
+  'the-audacity':       'adam'     // Confident swagger for NFC West
+};
 
 async function synthesizeKokoro({ text, voiceId, apiKey }) {
   const res = await fetch('https://queue.fal.run/fal-ai/kokoro/tts/v1', {
@@ -26,9 +77,7 @@ async function synthesizeKokoro({ text, voiceId, apiKey }) {
     throw new Error(data.detail || JSON.stringify(data));
   }
 
-  // Kokoro returns audio in the queue response or needs polling
   if (data.request_id) {
-    // Queue-based: poll for result
     const statusUrl = data.status_url || `https://queue.fal.run/fal-ai/kokoro/tts/v1/requests/${data.request_id}/status`;
     let attempts = 0;
     while (attempts < 30) {
@@ -54,12 +103,26 @@ async function synthesizeKokoro({ text, voiceId, apiKey }) {
     throw new Error('Kokoro TTS polling timeout');
   }
 
-  // Direct response
   return data.audio?.url || data.audio_url || data.output?.url;
 }
 
-async function synthesizeElevenLabs({ text, voiceId, apiKey, falApiKey }) {
-  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+async function synthesizeElevenLabs({ text, voiceId, apiKey, falApiKey, character, voiceSettings }) {
+  // Resolve character preset
+  let finalVoiceId = voiceId;
+  let finalSettings = voiceSettings || {
+    stability: 0.15,
+    similarity_boost: 0.65,
+    style: 0.3,
+    use_speaker_boost: true
+  };
+
+  if (character && CHARACTER_PRESETS[character]) {
+    const preset = CHARACTER_PRESETS[character];
+    finalVoiceId = finalVoiceId || preset.voiceId;
+    finalSettings = { ...preset.settings, ...voiceSettings };
+  }
+
+  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${finalVoiceId}`, {
     method: 'POST',
     headers: {
       'Accept': 'audio/mpeg',
@@ -69,12 +132,7 @@ async function synthesizeElevenLabs({ text, voiceId, apiKey, falApiKey }) {
     body: JSON.stringify({
       text,
       model_id: 'eleven_monolingual_v1',
-      voice_settings: {
-        stability: 0.15,
-        similarity_boost: 0.65,
-        style: 0.3,
-        use_speaker_boost: true
-      }
+      voice_settings: finalSettings
     })
   });
 
@@ -83,12 +141,9 @@ async function synthesizeElevenLabs({ text, voiceId, apiKey, falApiKey }) {
     throw new Error(`ElevenLabs error: ${err}`);
   }
 
-  // ElevenLabs returns raw audio bytes — we need to upload to a CDN
-  // Use Fal's file upload if available, otherwise return as data URL
   const audioBuffer = await res.arrayBuffer();
 
   if (falApiKey) {
-    // Upload to Fal CDN for a public URL
     try {
       const uploadRes = await fetch('https://fal.run/fal-ai/file-upload', {
         method: 'POST',
@@ -105,7 +160,6 @@ async function synthesizeElevenLabs({ text, voiceId, apiKey, falApiKey }) {
     }
   }
 
-  // Fallback: base64 data URL (works for playback, not for video generation)
   const b64 = Buffer.from(audioBuffer).toString('base64');
   return `data:audio/mpeg;base64,${b64}`;
 }
@@ -137,10 +191,16 @@ async function synthesizeNeets({ text, voiceId, apiKey }) {
 
 export async function handleVoiceSynthesize(req, res) {
   try {
-    const { provider, text, voiceId, apiKey, falApiKey } = req.body;
+    const { provider, text, voiceId, apiKey, falApiKey, character, theme, voiceSettings } = req.body;
 
     if (!text) {
       return res.status(400).json({ error: 'Missing required field: text' });
+    }
+
+    // Auto-resolve character from theme if not specified
+    let resolvedCharacter = character;
+    if (!resolvedCharacter && theme && THEME_VOICE_MAP[theme]) {
+      resolvedCharacter = THEME_VOICE_MAP[theme];
     }
 
     let audioUrl;
@@ -151,19 +211,29 @@ export async function handleVoiceSynthesize(req, res) {
         audioUrl = await synthesizeKokoro({ text, voiceId, apiKey: apiKey || falApiKey });
         break;
       case 'elevenlabs':
-        audioUrl = await synthesizeElevenLabs({ text, voiceId, apiKey, falApiKey });
+        audioUrl = await synthesizeElevenLabs({
+          text, voiceId, apiKey, falApiKey,
+          character: resolvedCharacter,
+          voiceSettings
+        });
         break;
       case 'neets':
         audioUrl = await synthesizeNeets({ text, voiceId, apiKey });
         break;
       default:
-        // Default to Kokoro
         audioUrl = await synthesizeKokoro({ text, voiceId, apiKey: apiKey || falApiKey });
     }
 
-    res.json({ audioUrl });
+    res.json({
+      audioUrl,
+      character: resolvedCharacter,
+      characterInfo: resolvedCharacter ? CHARACTER_PRESETS[resolvedCharacter] : null
+    });
   } catch (err) {
     console.error('Voice synthesis error:', err.message);
     res.status(502).json({ error: err.message });
   }
 }
+
+// Export for other modules
+export { CHARACTER_PRESETS, THEME_VOICE_MAP };
