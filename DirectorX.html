@@ -2263,6 +2263,40 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
       return { text: finalDesc, detected };
     }
 
+    // ── SCENE ROUTING ENGINE ──────────────────────────────────────────
+    function routeScene(scene) {
+      const desc = (scene.desc || '').toLowerCase();
+      const type = (scene.type || '').toLowerCase();
+
+      // Talking-head / dialogue-heavy scenes → avatar platforms
+      if (type === 'dialogue' || type === 'monologue' || /\btalking\s+head\b/.test(desc)) {
+        return { platform: 'heygen', reason: 'Dialogue scene → avatar' };
+      }
+
+      // Close-ups with emotional focus → HaiLuo (strong on faces)
+      if (/\bclose-?up\b/.test(desc) && /\bface\b|\bemotion\b|\beyes\b|\btears\b/.test(desc)) {
+        return { platform: 'hailuo', reason: 'Emotional close-up → HaiLuo' };
+      }
+
+      // Epic establishing / wide landscape shots → Google Vids / Veo
+      if (type === 'establishing' || /\bwide\s+shot\b|\baerial\b|\bpanoram\b|\blandscape\b|\bepic\b/.test(desc)) {
+        return { platform: 'googlevids', reason: 'Epic/establishing → Google Vids' };
+      }
+
+      // Action / fast motion → Kling (good motion handling)
+      if (type === 'action' || /\bexplosion\b|\bchase\b|\bfight\b|\brun\b|\bcharge\b|\bimpact\b/.test(desc)) {
+        return { platform: 'kling', reason: 'Action scene → Kling' };
+      }
+
+      // Stylized / artistic / surreal → Pika
+      if (/\bstyliz\b|\babstract\b|\bsurreal\b|\bglitch\b|\bparticle\b/.test(desc)) {
+        return { platform: 'pika', reason: 'Stylized visual → Pika' };
+      }
+
+      // Default → Kling (solid all-rounder)
+      return { platform: scene.platform || 'kling', reason: 'Default routing' };
+    }
+
     // ── PARSER LOGIC FOR THE BATCH UPLOADER ───────────────────────────
     function parsePastedScenes(text) {
       text = text.trim();
