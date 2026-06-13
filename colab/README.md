@@ -1,48 +1,80 @@
-# 🎬 Director-X Free Video Server (Google Colab)
+# 🎬 Director-X Free Video Servers
 
-Generate unlimited AI videos for **$0** using Google Colab's free T4 GPU.
+Run **LTX-Video** on a free cloud GPU and connect it to Director-X. No local GPU required.
 
-## Quick Start
+## Two Options
 
-1. **Open the notebook:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sigmasolutionsx-droid/director-x/blob/main/colab/DirectorX_Free_Video_Server.ipynb)
+| | Google Colab | Kaggle |
+|---|---|---|
+| **Notebook** | `DirectorX_Free_Video_Server.ipynb` | `DirectorX_Kaggle_Video_Server.ipynb` |
+| **Free GPU** | T4 (16GB VRAM) | T4 x2 (16GB VRAM) |
+| **Weekly limit** | Variable (~4-12 hrs) | **30 hours/week** |
+| **Availability** | Can run out during peak hours | Almost always available |
+| **Session length** | ~90 min idle / ~12 hrs active | ~12 hrs active |
+| **Best for** | Quick tests | Full episode batches |
 
-2. **Get a free ngrok token:** Sign up at [ngrok.com](https://ngrok.com) and copy your auth token
+## Quick Start (Both Platforms)
 
-3. **Run all cells** — the last cell starts the server and prints your public URL
+### 1. Get an ngrok token (free, one-time)
+- Go to [ngrok.com](https://ngrok.com) → Sign up → Dashboard → Your Authtoken
+- Copy the token — you'll paste it into the notebook
 
-4. **Paste the URL into Director-X** — Settings → Colab Server URL
+### 2. Open the notebook
 
-5. **Generate videos!** 🚀
+**Colab:**
+1. Open `DirectorX_Free_Video_Server.ipynb` in GitHub
+2. Click "Open in Colab"
+3. Runtime → Change runtime type → **T4 GPU**
 
-## What's Included
+**Kaggle:**
+1. Go to [kaggle.com/code](https://www.kaggle.com/code) → New Notebook → Import
+2. Upload `DirectorX_Kaggle_Video_Server.ipynb`
+3. Sidebar → Settings → Accelerator → **GPU T4 x2**
+4. Turn on **Internet** (required for ngrok)
 
-- **LTX-Video** model optimized for T4 GPU (free tier)
-- Text-to-video generation
-- Multiple aspect ratios: 16:9 (YouTube), 9:16 (TikTok/Reels), 1:1 (Instagram), 4:3
-- Job queue system — submit multiple scenes, they process in order
-- REST API that Director-X connects to directly
+### 3. Run all cells
+- Paste your ngrok token in Step 2
+- Run All → wait for model download (~5 min first time)
+- Copy the ngrok URL printed at the end
 
-## API Endpoints
+### 4. Connect to Director-X
+- In Director-X, select **Colab (Local)** as your video provider
+- Paste the ngrok URL as the server address
+- Hit Full Pipeline — videos render on the cloud GPU for free!
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/health` | GET | Server status, GPU info, queue length |
-| `/api/video/submit` | POST | Submit a video generation job |
-| `/api/video/status/{id}` | GET | Check job status |
-| `/api/video/download/{id}` | GET | Download completed video |
-| `/api/queue` | GET | View generation queue |
+## Specs
 
-## Limits
+- **Model:** LTX-Video (Lightricks)
+- **Resolution:** 512×320 (standard) or 1024×640 (high)
+- **FPS:** 12
+- **Duration:** 1-7 seconds per clip
+- **Aspect ratios:** 16:9, 9:16, 1:1, 4:3
+- **Queue:** Automatic job queue for batch processing
 
-- Free Colab: ~4 hours GPU time per session
-- Resolution: 512x320 (standard) — good for drafts and social media
-- Duration: 1-7 seconds per clip
-- One video generates at a time (queued)
+## API Reference
 
-## Want Higher Quality?
+```
+POST /api/video/submit
+{
+  "prompt": "A dusty frontier town at sunset, cinematic",
+  "aspect_ratio": "16:9",
+  "duration": 3,
+  "quality": "standard",
+  "seed": 42
+}
 
-- **Colab Pro ($10/mo):** A100 GPU → 1080p output, faster generation
-- **Fal.ai ($10 free credits):** Higher quality models (Kling, Veo 3)
-- **Replicate ($5 free credits):** Wan 2.1 720p
+GET /api/video/status/{requestId}  → { status, videoUrl, error }
+GET /api/video/download/{requestId} → video/mp4
+GET /api/health → { provider, model, gpu, vram, queue_length }
+GET /api/queue → { queue_length, is_generating, recent_jobs }
+```
 
-The Director-X backend supports all providers simultaneously — use Colab for drafts, paid providers for final renders.
+## Troubleshooting
+
+| Issue | Fix |
+|---|---|
+| "No GPU detected" | Change runtime to T4 GPU (Colab: Runtime menu; Kaggle: sidebar Settings) |
+| "Internet disabled" (Kaggle) | Sidebar → Settings → Turn on Internet. May require phone verification |
+| ngrok tunnel dies | Re-run the last cell to get a new URL |
+| Session disconnected | Re-run all cells. Model loads from cache (~2 min) |
+| Out of GPU quota (Colab) | Switch to Kaggle — 30 hrs/week almost never runs out |
