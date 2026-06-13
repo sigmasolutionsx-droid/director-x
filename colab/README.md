@@ -1,25 +1,33 @@
-# 🎬 Director-X Free Video Servers (V2)
+# 🎬 Director-X Free GPU Servers
 
-Run AI video generation on free cloud GPUs. Both notebooks auto-select the best model for your hardware.
+Run AI generation on free cloud GPUs — no local hardware needed.
 
-## Model Auto-Selection
+## Two Modes
 
-The notebooks try models in order and use the best one that fits:
+### 🎨 Image Pipeline (Recommended)
+Generates stunning SDXL images → applies cinematic Ken Burns motion (zoom, pan, parallax) → finished video.
 
-| Priority | Model | Params | VRAM | Resolution | Quality |
-|----------|-------|--------|------|------------|---------|
-| 1st | CogVideoX-2B | 2B | ~12GB | 720×480 | ⭐⭐⭐⭐ |
-| 2nd | Wan2.1-T2V-1.3B | 1.3B | ~5GB | 640×360 | ⭐⭐⭐ |
-| 3rd | ModelScope-1.7B | 1.7B | ~4GB | 512×320 | ⭐⭐ |
+**Why this is better on free GPUs:**
+- SDXL runs flawlessly on free T4 — no crashes, no OOM
+- ~5-10 seconds per image (vs 3-5 minutes for video)
+- Image quality is stunning — 1024×576 cinematic shots
+- Ken Burns motion makes it look like a premium documentary
+- Unlimited generation on Kaggle (30 hrs/week)
 
-## Two Platforms
+| Notebook | Platform |
+|---|---|
+| `DirectorX_Image_Server_Colab.ipynb` | Google Colab |
+| `DirectorX_Image_Server_Kaggle.ipynb` | Kaggle |
 
-| | Google Colab | Kaggle |
-|---|---|---|
-| **Notebook** | `DirectorX_Free_Video_Server.ipynb` | `DirectorX_Kaggle_Video_Server.ipynb` |
-| **Free GPU** | T4 (16GB) | T4 x2 (16GB) |
-| **Weekly limit** | ~4-12 hrs | **30 hours/week** |
-| **Best for** | Quick tests | Full production batches |
+### 🎬 Video Generation (Experimental)
+Direct AI video generation — higher motion quality but needs more GPU power.
+
+Auto-selects the best model: CogVideoX-2B → Wan2.1-1.3B → ModelScope-1.7B
+
+| Notebook | Platform |
+|---|---|
+| `DirectorX_Free_Video_Server.ipynb` | Google Colab |
+| `DirectorX_Kaggle_Video_Server.ipynb` | Kaggle |
 
 ## Quick Start
 
@@ -28,28 +36,54 @@ The notebooks try models in order and use the best one that fits:
 
 ### 2. Open notebook
 
-**Colab:** Open `.ipynb` → Runtime → Change runtime type → **T4 GPU**
+**Colab:** Upload `.ipynb` → Runtime → Change runtime type → **T4 GPU**
 
 **Kaggle:** kaggle.com → New Notebook → Import → Upload `.ipynb` → Sidebar: **GPU T4 x2** + **Internet ON**
 
 ### 3. Run All
 - Paste ngrok token in Step 2
-- Wait for model to load (3-5 min first time, ~2 min after)
+- Wait for model to load
 - Copy the ngrok URL
 
 ### 4. Connect to Director-X
-- Select **Colab (Local)** as video provider
-- Paste the ngrok URL
-- Generate!
 
-## API
+**For Image Pipeline:**
+- Select **🎨 Image Pipeline** as Video Provider
+- Paste the ngrok URL into the Image Server field
+
+**For Video Generation:**
+- Select **🆓 Colab Free** as Video Provider
+- Paste the ngrok URL
+
+## Image Server API
+
+```
+POST /api/image/generate   { "prompt": "...", "aspect_ratio": "16:9", "style": "western" }
+POST /api/image/batch      { "scenes": [{ "prompt": "...", "style": "..." }, ...] }
+GET  /api/image/status/{id} → { status, imageUrl, thumbnail }
+GET  /api/image/download/{id} → PNG
+GET  /api/health | /api/queue
+```
+
+### Styles
+| Style | Shows |
+|-------|-------|
+| `cinematic` | Default — dramatic lighting, film grain |
+| `western` | Hell on Wheels / The Kansas City Line |
+| `frozen` | The Frozen Front / Game of Thrones |
+| `pirate` | No Quarter / Black Sails |
+| `noir` | The Departed / Atlantic Command |
+| `warfare` | Texas Rising / The Wall |
+| `urban` | We Own This City / Eastern Front |
+| `fantasy` | The Audacity / The Pacific Coast |
+
+## Video Server API
 
 ```
 POST /api/video/submit  { "prompt": "...", "aspect_ratio": "16:9", "duration": 3 }
-GET  /api/video/status/{id}  → { status, videoUrl }
+GET  /api/video/status/{id} → { status, videoUrl }
 GET  /api/video/download/{id} → mp4
-GET  /api/health → { model, gpu, vram, resolution }
-GET  /api/queue → { queue_length, recent_jobs }
+GET  /api/health | /api/queue
 ```
 
 ## Troubleshooting
@@ -57,7 +91,7 @@ GET  /api/queue → { queue_length, recent_jobs }
 | Issue | Fix |
 |---|---|
 | No GPU | Change runtime to T4 GPU |
-| All models fail | Restart runtime, re-run all cells |
-| ngrok dies | Re-run last cell for new URL |
-| OOM during generation | Reduce duration to 2-3 seconds |
-| Kaggle won't import | Make sure you're uploading the `.ipynb` file directly |
+| Model fails to load | Restart runtime, re-run all cells |
+| ngrok URL dies | Re-run the last cell |
+| OOM (video only) | Switch to Image Pipeline instead |
+| Kaggle won't import | Re-download the `.ipynb` from GitHub |

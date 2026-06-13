@@ -1408,6 +1408,7 @@
         <option value="replicate">Replicate (Kling, Hunyuan, Wan, Luma)</option>
         <option value="kling-direct">Kling AI (Official Developer Direct API)</option>
         <option value="colab-local">🆓 Colab Free — LTX-Video (No API Key)</option>
+        <option value="image-pipeline">🎨 Image Pipeline — SDXL + Ken Burns Motion (Free)</option>
       </select>
       <select class="model-select" id="videoModelSelect" onchange="checkCustomModel()"></select>
       
@@ -1417,6 +1418,10 @@
       <div class="api-key-wrap" id="videoKeyWrapper">
         <div class="api-label" id="videoKeyLabel">Video Key</div>
         <input class="api-key-input" id="videoApiKeyInput" type="password" placeholder="Paste Fal.ai or Replicate key">
+      </div>
+      <div class="api-key-wrap" id="imageServerWrapper" style="display:none;">
+        <div class="api-label" style="color:#D4A437">Image Server</div>
+        <input class="api-key-input" id="imageServerUrl" type="text" placeholder="Paste ngrok URL from Image Server notebook">
         
         <!-- Kling SK input (hidden by default) -->
         <div class="api-label" id="klingSkLabel" style="display: none;">Secret Key</div>
@@ -1544,7 +1549,7 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
                 <option value="facebook">👤 Facebook (16:9)</option>
               </select>
               <button class="btn btn-pri" style="width:100%; margin-top:6px; background:linear-gradient(135deg, #ff6719, #e05500);" onclick="importSubstackArticle()">📰 Parse Article → Scenes</button>
-              <button class="btn btn-pri" style="width:100%; margin-top:4px; background:linear-gradient(135deg, #D4A437, #B8860B); font-size:10px; padding:8px; letter-spacing:0.5px;" onclick="runFullPipeline()">🚀 FULL PIPELINE: Article → Scenes → Video → Voice → SEO → Download</button>
+              <button class="btn btn-pri" style="width:100%; margin-top:4px; background:linear-gradient(135deg, #D4A437, #B8860B); font-size:10px; padding:8px; letter-spacing:0.5px;" onclick="runFullPipeline()">🚀 FULL PIPELINE: Article → Scenes → Images/Video → Voice → SEO → Export</button>
               <div id="substackStatus" style="font-size:9px; color:var(--muted); margin-top:4px;"></div>
             </div>
 
@@ -1945,7 +1950,15 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
     };
 
     const PLATFORMS = {
-      hunyuanavatar: { name: 'Hunyuan Avatar', color: '#10b981', icon: '👤', free: true, url: 'https://hunyuanvideo-avatar.github.io/' },
+      hunyuanavatar: { name: 'Hunyuan Avatar',
+      'image-pipeline': {
+        models: [
+          { id: 'sdxl-1.0', name: 'SDXL 1.0 (Best Quality)', type: 'image' },
+          { id: 'sd-1.5', name: 'SD 1.5 (Lighter)', type: 'image' },
+        ],
+        needsKey: false,
+        description: 'Image Pipeline: Generates cinematic still images with SDXL on free Colab/Kaggle GPU, then applies Ken Burns motion (zoom, pan, parallax) to create finished video. Better quality than free video models.',
+      }, color: '#10b981', icon: '👤', free: true, url: 'https://hunyuanvideo-avatar.github.io/' },
       kling: { name: 'Kling AI', color: '#a855f7', icon: '🎬', free: true, url: 'https://klingai.com' },
       pika: { name: 'Pika', color: '#f97316', icon: '⚡', free: true, url: 'https://pika.art' },
       hailuo: { name: 'HaiLuo AI', color: '#22c55e', icon: '👤', free: true, url: 'https://hailuoai.video' },
@@ -1964,6 +1977,7 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
       hailuo: 'HaiLuo: focus on human subjects — facial expressions, body language, emotional state, skin detail, natural movement, face lighting. Very strong on close-ups.',
       googlevids: 'Google Vids/Veo: cinematic scale, landscape establishing shots, wide angles, epic scope. Highest quality — use for hero shots only. Very responsive to cinematography language.',
       colab: 'Google Colab (Free): runs LTX-Video on a free T4 GPU via your Colab notebook. Unlimited generation, 512x320 resolution, 1-7 second clips. Select "Colab Free" as your Video Provider above and paste the ngrok URL from the notebook. Great for drafts and scene testing.',
+      imagePipeline: 'Image Pipeline (Free): generates stunning SDXL images on free Colab/Kaggle GPU, then applies cinematic Ken Burns motion (zoom, pan, parallax). Much higher image quality than free video models. Select "Image Pipeline" and paste the ngrok URL from the Image Server notebook.',
       invideo: 'InVideo: describe as a full video brief — topic, visual style needed, stock footage direction, voiceover tone, background music mood, pacing.',
       runway: 'Runway Gen-4: pipe-separated keywords work best — subject | action | style | camera movement | lighting | quality tier. Technical cinematography terms get excellent results.',
       heygen: 'HeyGen: provide exact avatar script in quotes. Then specify: avatar style, background setting, delivery tone. This is talking-head only — write dialogue, not visual description.',
@@ -2047,6 +2061,22 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
 
     // ── VIDEO GENERATION API SETUP ─────────────────────────────────────
     function updateVideoModels() {
+      // Show/hide image server URL based on provider
+      const imgWrap = document.getElementById('imageServerWrapper');
+      const vidWrap = document.getElementById('videoKeyWrapper');
+      if (imgWrap) {
+        if (videoProvider === 'image-pipeline') {
+          imgWrap.style.display = '';
+          if (vidWrap) vidWrap.style.display = 'none';
+          // Load saved URL
+          const savedUrl = localStorage.getItem('twain_image_server_url');
+          if (savedUrl) document.getElementById('imageServerUrl').value = savedUrl;
+        } else {
+          imgWrap.style.display = 'none';
+          if (vidWrap) vidWrap.style.display = '';
+        }
+      }
+
       videoProvider = document.getElementById('videoProviderSelect').value;
       const sel = document.getElementById('videoModelSelect');
 
@@ -2519,6 +2549,429 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
     }
 
 
+
+    // ══════════════════════════════════════════════════════════════════
+    //  IMAGE PIPELINE ENGINE
+    //  Generates images via SDXL server → applies Ken Burns motion
+    // ══════════════════════════════════════════════════════════════════
+
+    const IMAGE_STYLES = {
+      'hell-on-wheels':     'western',
+      'game-of-thrones':    'frozen',
+      'black-sails':        'pirate',
+      'the-revenant':       'frozen',
+      'texas-rising':       'warfare',
+      'the-departed':       'noir',
+      'we-own-this-city':   'urban',
+      'the-audacity':       'cinematic',
+    };
+
+    function getImageServerUrl() {
+      const urlInput = document.getElementById('imageServerUrl');
+      const url = urlInput ? urlInput.value.trim() : '';
+      if (url) localStorage.setItem('twain_image_server_url', url);
+      return url;
+    }
+
+    async function generateImageForScene(sceneIdx) {
+      const scene = scenes[sceneIdx];
+      if (!scene) return;
+
+      const imageServerUrl = getImageServerUrl();
+      if (!imageServerUrl) {
+        throw new Error('Set your Image Server URL (from the Colab/Kaggle notebook)');
+      }
+
+      const themeSelect = document.getElementById('substackThemeOverride');
+      const theme = themeSelect ? themeSelect.value : 'auto';
+      const style = IMAGE_STYLES[theme] || 'cinematic';
+      const platform = document.getElementById('substackExportPlatform')?.value || 'youtube';
+      const aspectMap = { youtube: '16:9', tiktok: '9:16', instagram: '1:1', facebook: '4:5' };
+      const aspect = aspectMap[platform] || '16:9';
+
+      scene.videoStatus = 'PENDING';
+      scene.videoLogs = ['Generating image...'];
+      renderScenes();
+
+      // Submit image generation
+      const submitRes = await fetch(imageServerUrl + '/api/image/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: scene.generatedPrompt || scene.desc,
+          aspect_ratio: aspect,
+          style: style,
+          seed: -1,
+        }),
+      });
+
+      if (!submitRes.ok) {
+        const errData = await submitRes.json().catch(() => ({}));
+        throw new Error(errData.error || 'Image server error: ' + submitRes.status);
+      }
+
+      const submitData = await submitRes.json();
+      const requestId = submitData.requestId;
+      scene.videoStatus = 'GENERATING';
+      scene.videoLogs.push('Image generating... (requestId: ' + requestId.slice(0, 8) + ')');
+      renderScenes();
+
+      // Poll for completion
+      let maxPolls = 120; // 2 minutes max
+      while (maxPolls-- > 0) {
+        await new Promise(r => setTimeout(r, 1000));
+
+        const statusRes = await fetch(imageServerUrl + '/api/image/status/' + requestId);
+        const statusData = await statusRes.json();
+
+        if (statusData.status === 'COMPLETED') {
+          // Store the image URL — the assembly engine will apply Ken Burns later
+          scene.imageUrl = imageServerUrl + '/api/image/download/' + requestId;
+          scene.thumbnailUrl = statusData.thumbnail || null;
+          scene.videoStatus = 'SUCCESS';
+          scene.videoLogs.push('✅ Image generated!');
+          renderScenes();
+          return;
+        } else if (statusData.status === 'FAILED') {
+          throw new Error(statusData.error || 'Image generation failed');
+        }
+        // Still generating — continue polling
+      }
+      throw new Error('Image generation timed out');
+    }
+
+    async function runImagePipeline() {
+      // Full pipeline for image mode: parse → images → Ken Burns assembly → voice → SEO
+      const articleText = document.getElementById('substackArticleInput').value.trim();
+      if (!articleText) {
+        alert('Paste your article text first.');
+        return;
+      }
+
+      const imageServerUrl = getImageServerUrl();
+      if (!imageServerUrl) {
+        alert('Paste your Image Server URL from the Colab/Kaggle notebook first.');
+        return;
+      }
+
+      pipelineRunning = true;
+      pipelineCancelled = false;
+      stopBatchRequested = false;
+      ['parse','video','voice','seo','export'].forEach(s => setPipelineStep(s, '', 'Waiting...'));
+      document.getElementById('pipelineOverallStatus').textContent = '⏳ Image Pipeline running...';
+      document.getElementById('pipelineCancelBtn').style.display = 'inline-block';
+      document.getElementById('pipelineCloseBtn').style.display = 'none';
+      document.getElementById('pipelineOverlay').classList.add('active');
+
+      const pipelineStart = Date.now();
+      const elapsed = () => ((Date.now() - pipelineStart) / 1000).toFixed(1);
+
+      try {
+        // ── STEP 1: PARSE ARTICLE ──
+        let stepStart = Date.now();
+        setPipelineStep('parse', 'active', 'Parsing article...');
+        addMsg('director', '🎨 **Image Pipeline launched!** Step 1/5: Parsing article...');
+
+        const themeOverride = document.getElementById('substackThemeOverride').value;
+        const exportPlatform = document.getElementById('substackExportPlatform').value;
+        const aspect = PLATFORM_ASPECTS[exportPlatform] || '16:9';
+
+        if (hasProxyBackend) {
+          try {
+            const res = await fetch(apiBase + '/api/substack/parse', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                content: articleText,
+                theme: themeOverride !== 'auto' ? themeOverride : undefined
+              })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Parse failed');
+
+            const backendScenes = (data.scenes || []).map((s, idx) => ({
+              num: s.sceneNumber || (idx + 1),
+              type: s.type || 'General',
+              desc: s.visualPrompt || s.description || 'No description',
+              voiceover: s.voiceover || '',
+              duration: s.duration || 5,
+              mood: s.mood || 'Cinematic',
+              shotType: s.shotType || 'Medium',
+              platform: 'image-pipeline',
+              exportAspect: aspect,
+              exportQuality: 'standard',
+              generatedPrompt: s.visualPrompt || s.description || '',
+              videoStatus: 'IDLE',
+              videoUrl: null,
+              imageUrl: null,
+              videoError: '',
+              videoLogs: [],
+              detectedCharacters: s.characters || []
+            }));
+
+            document.getElementById('scenePasteArea').value = JSON.stringify(backendScenes, null, 2);
+            triggerParseAndLoad();
+
+            scenes.forEach(s => {
+              s.exportAspect = aspect;
+              s.videoStatus = 'IDLE';
+              s.videoUrl = null;
+              s.imageUrl = null;
+              s.videoError = '';
+              s.videoLogs = [];
+            });
+            renderScenes();
+
+          } catch (err) {
+            const paragraphs = articleText.split(/\n\n+/).filter(p => p.trim().length > 30);
+            const fallbackScenes = paragraphs.slice(0, 20).map((p, idx) => ({
+              num: idx + 1,
+              type: idx === 0 ? 'Hook' : 'General',
+              desc: p.trim().substring(0, 300),
+              voiceover: '',
+              duration: 5,
+              mood: 'Cinematic',
+              shotType: 'Medium',
+              platform: 'image-pipeline',
+              exportAspect: aspect
+            }));
+            document.getElementById('scenePasteArea').value = JSON.stringify(fallbackScenes, null, 2);
+            triggerParseAndLoad();
+          }
+        } else {
+          const paragraphs = articleText.split(/\n\n+/).filter(p => p.trim().length > 30);
+          const fallbackScenes = paragraphs.slice(0, 20).map((p, idx) => ({
+            num: idx + 1,
+            type: idx === 0 ? 'Hook' : 'General',
+            desc: p.trim().substring(0, 300),
+            voiceover: '',
+            duration: 5,
+            mood: 'Cinematic',
+            shotType: 'Medium',
+            platform: 'image-pipeline',
+            exportAspect: aspect
+          }));
+          document.getElementById('scenePasteArea').value = JSON.stringify(fallbackScenes, null, 2);
+          triggerParseAndLoad();
+        }
+
+        if (pipelineCancelled) throw new Error('Pipeline cancelled');
+        setPipelineStep('parse', 'done', scenes.length + ' scenes extracted', ((Date.now() - stepStart) / 1000).toFixed(1));
+        addMsg('director', '✅ Step 1: **' + scenes.length + ' scenes** parsed.');
+
+        // ── STEP 2: GENERATE IMAGES ──
+        stepStart = Date.now();
+        setPipelineStep('video', 'active', 'Generating images for ' + scenes.length + ' scenes...');
+        addMsg('director', '🎨 Step 2/5: Generating cinematic images for ' + scenes.length + ' scenes...');
+
+        scenes.forEach(s => {
+          if (s.videoStatus !== 'SUCCESS') {
+            s.videoStatus = 'IDLE';
+            s.imageUrl = null;
+            s.videoUrl = null;
+            s.videoError = '';
+            s.videoLogs = [];
+          }
+        });
+        renderScenes();
+
+        // Generate images one at a time (SDXL is fast, ~5-10s each)
+        let imgDone = 0;
+        let imgFailed = 0;
+        for (let i = 0; i < scenes.length; i++) {
+          if (pipelineCancelled) break;
+          try {
+            await generateImageForScene(i);
+            imgDone++;
+          } catch (err) {
+            imgFailed++;
+            scenes[i].videoStatus = 'FAILED';
+            scenes[i].videoError = err.message;
+            scenes[i].videoLogs.push('❌ ' + err.message);
+            renderScenes();
+          }
+          setPipelineStep('video', 'active', imgDone + '/' + scenes.length + ' images' + (imgFailed ? ', ' + imgFailed + ' failed' : ''));
+        }
+
+        if (pipelineCancelled) throw new Error('Pipeline cancelled');
+        setPipelineStep('video', imgDone > 0 ? 'done' : 'error',
+          imgDone + ' images generated' + (imgFailed ? ', ' + imgFailed + ' failed' : ''),
+          ((Date.now() - stepStart) / 1000).toFixed(1));
+        addMsg('director', '✅ Step 2: **' + imgDone + ' images** generated.');
+
+        // ── STEP 3: ASSEMBLE WITH KEN BURNS + VOICE ──
+        stepStart = Date.now();
+        const voiceProvider = document.getElementById('voiceProviderSelect')?.value || 'fal-kokoro';
+        const voiceApiKey = document.getElementById('voiceApiKeyInput')?.value || '';
+        const hasVoiceSetup = (voiceProvider === 'fal-kokoro') || (voiceProvider === 'elevenlabs' && voiceApiKey);
+
+        if (hasVoiceSetup && hasProxyBackend) {
+          setPipelineStep('voice', 'active', 'Generating voiceovers...');
+          addMsg('director', '🎙️ Step 3/5: Generating voiceovers...');
+
+          let voiceDone = 0;
+          for (let i = 0; i < scenes.length; i++) {
+            if (pipelineCancelled) break;
+            const scene = scenes[i];
+            const voText = scene.voiceover || scene.desc?.slice(0, 300) || '';
+            if (!voText) continue;
+
+            try {
+              const res = await fetch(apiBase + '/api/voice/synthesize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  provider: voiceProvider,
+                  text: voText,
+                  character: selectedVoicePreset,
+                  apiKey: voiceApiKey,
+                  voiceSettings: {
+                    stability: (document.getElementById('voiceStabilitySlider')?.value || 15) / 100,
+                    similarity_boost: (document.getElementById('voiceClaritySlider')?.value || 65) / 100
+                  }
+                })
+              });
+              const data = await res.json();
+              if (data.audioUrl) {
+                scene.speechAudioUrl = data.audioUrl;
+                voiceDone++;
+              }
+            } catch (err) {
+              console.warn('Voice failed for scene ' + scene.num + ':', err.message);
+            }
+            setPipelineStep('voice', 'active', voiceDone + '/' + scenes.length + ' voiceovers');
+          }
+
+          if (pipelineCancelled) throw new Error('Pipeline cancelled');
+          setPipelineStep('voice', 'done', voiceDone + ' voiceovers generated', ((Date.now() - stepStart) / 1000).toFixed(1));
+          addMsg('director', '✅ Step 3: **' + voiceDone + ' voiceovers** generated.');
+        } else {
+          setPipelineStep('voice', 'done', 'Skipped (no voice provider)', '0');
+        }
+
+        // ── STEP 4: SEO ──
+        stepStart = Date.now();
+        setPipelineStep('seo', 'active', 'Generating SEO...');
+        addMsg('director', '🔍 Step 4/5: Generating SEO metadata...');
+
+        const substackUrl = document.getElementById('seoSubstackUrl')?.value || 'https://riseandclaim.substack.com';
+        const theme = themeOverride !== 'auto' ? themeOverride : undefined;
+        const title = scenes[0]?.title || 'Rise and Claim';
+
+        if (hasProxyBackend) {
+          try {
+            const res = await fetch(apiBase + '/api/seo/generate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title, theme,
+                scenes: scenes.map(s => ({ num: s.num, title: s.title || 'Scene ' + s.num, voiceover: s.voiceover })),
+                substackUrl,
+                platforms: ['youtube', 'tiktok', 'instagram', 'facebook']
+              })
+            });
+            seoData = await res.json();
+          } catch (err) {
+            seoData = generateSEOClientSide({ title, theme: themeOverride, scenes, substackUrl });
+          }
+        } else {
+          seoData = generateSEOClientSide({ title, theme: themeOverride, scenes, substackUrl });
+        }
+        renderSEOCards(seoData);
+
+        if (pipelineCancelled) throw new Error('Pipeline cancelled');
+        setPipelineStep('seo', 'done', 'SEO ready for 4 platforms', ((Date.now() - stepStart) / 1000).toFixed(1));
+
+        // ── STEP 5: ASSEMBLY (Ken Burns motion + combine) ──
+        stepStart = Date.now();
+        setPipelineStep('export', 'active', 'Assembling video with Ken Burns motion...');
+        addMsg('director', '🎬 Step 5/5: Assembling images into video with cinematic motion...');
+
+        const successScenes = scenes.filter(s => s.videoStatus === 'SUCCESS' && s.imageUrl);
+
+        if (hasProxyBackend && successScenes.length > 0) {
+          try {
+            const assemblyScenes = successScenes.map((s, idx) => ({
+              imageUrl: s.imageUrl,
+              text: s.desc || '',
+              duration: s.duration || 5,
+            }));
+
+            const platformForExport = exportPlatform === 'all' ? 'youtube' : exportPlatform;
+
+            const asmRes = await fetch(apiBase + '/api/assembly/create', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                scenes: assemblyScenes,
+                platform: platformForExport,
+                title: title,
+                transitionDuration: 0.5,
+              })
+            });
+            const asmData = await asmRes.json();
+
+            if (asmData.jobId) {
+              // Poll for assembly completion
+              let asmDone = false;
+              let asmPolls = 600; // 10 min max
+              while (!asmDone && asmPolls-- > 0 && !pipelineCancelled) {
+                await new Promise(r => setTimeout(r, 1000));
+                const statusRes = await fetch(apiBase + '/api/assembly/status/' + asmData.jobId);
+                const statusData = await statusRes.json();
+
+                if (statusData.status === 'COMPLETED') {
+                  asmDone = true;
+                  window._assembledVideoUrl = apiBase + '/api/assembly/download/' + asmData.jobId;
+                  setPipelineStep('export', 'active',
+                    'Video assembled! ' + statusData.progress + '/' + statusData.totalSteps + ' steps');
+                } else if (statusData.status === 'FAILED') {
+                  throw new Error(statusData.error || 'Assembly failed');
+                } else {
+                  setPipelineStep('export', 'active',
+                    'Assembling... step ' + statusData.progress + '/' + statusData.totalSteps);
+                }
+              }
+            }
+          } catch (err) {
+            console.warn('Assembly error:', err.message);
+            addMsg('director', '⚠️ Assembly step had an issue: ' + err.message + '. Individual images are still available.');
+          }
+        }
+
+        setPipelineStep('export', 'done', 'Complete!', ((Date.now() - stepStart) / 1000).toFixed(1));
+
+        // ── DONE ──
+        const totalTime = ((Date.now() - pipelineStart) / 1000).toFixed(1);
+        const assembledNote = window._assembledVideoUrl ? '\n🎬 **Assembled video** ready for download!' : '';
+        document.getElementById('pipelineOverallStatus').innerHTML =
+          '🎉 <strong>Image Pipeline complete!</strong> ' + imgDone + ' images, ' +
+          scenes.filter(s => s.speechAudioUrl).length + ' voiceovers — ' + totalTime + 's';
+        document.getElementById('pipelineCancelBtn').style.display = 'none';
+        document.getElementById('pipelineCloseBtn').style.display = 'inline-block';
+
+        addMsg('director', '🎉 **IMAGE PIPELINE COMPLETE!**\\n\\n' +
+          '🎨 **' + imgDone + ' images** generated (SDXL)\\n' +
+          '🎙️ **' + scenes.filter(s => s.speechAudioUrl).length + ' voiceovers** synthesized\\n' +
+          '🔍 **SEO metadata** for 4 platforms\\n' +
+          assembledNote + '\\n' +
+          '⏱️ Total time: **' + totalTime + 's**');
+
+      } catch (err) {
+        if (err.message === 'Pipeline cancelled') {
+          document.getElementById('pipelineOverallStatus').textContent = '🛑 Pipeline cancelled.';
+          addMsg('director', '🛑 Image Pipeline cancelled by user.');
+        } else {
+          document.getElementById('pipelineOverallStatus').textContent = '❌ Error: ' + err.message;
+          addMsg('director', '❌ Image Pipeline error: ' + err.message);
+        }
+        document.getElementById('pipelineCancelBtn').style.display = 'none';
+        document.getElementById('pipelineCloseBtn').style.display = 'inline-block';
+      } finally {
+        pipelineRunning = false;
+      }
+    }
+
     // ── FULL PIPELINE ORCHESTRATOR ──────────────────────────────────
     let pipelineRunning = false;
     let pipelineCancelled = false;
@@ -2546,6 +2999,12 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
     }
 
     async function runFullPipeline() {
+      // If image-pipeline is selected, use the image pipeline instead
+      const vp = document.getElementById('videoProviderSelect')?.value;
+      if (vp === 'image-pipeline') {
+        return runImagePipeline();
+      }
+
       // ── Validate inputs ──
       const articleText = document.getElementById('substackArticleInput').value.trim();
       if (!articleText) {
