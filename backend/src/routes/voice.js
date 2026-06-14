@@ -60,10 +60,14 @@ const THEME_VOICE_MAP = {
 };
 
 async function synthesizeKokoro({ text, voiceId, apiKey }) {
+  const falKey = apiKey || process.env.FAL_API_KEY;
+  if (!falKey) {
+    throw new Error('Fal.ai API key required for Kokoro — set FAL_API_KEY in backend/.env or enter it in the frontend');
+  }
   const res = await fetch('https://queue.fal.run/fal-ai/kokoro/tts/v1', {
     method: 'POST',
     headers: {
-      'Authorization': `Key ${apiKey}`,
+      'Authorization': `Key ${falKey}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
@@ -83,14 +87,14 @@ async function synthesizeKokoro({ text, voiceId, apiKey }) {
     while (attempts < 30) {
       await new Promise(r => setTimeout(r, 2000));
       const statusRes = await fetch(statusUrl, {
-        headers: { 'Authorization': `Key ${apiKey}` }
+        headers: { 'Authorization': `Key ${falKey}` }
       });
       const statusData = await statusRes.json();
 
       if (statusData.status === 'COMPLETED') {
         const resultRes = await fetch(
           `https://queue.fal.run/fal-ai/kokoro/tts/v1/requests/${data.request_id}`,
-          { headers: { 'Authorization': `Key ${apiKey}` } }
+          { headers: { 'Authorization': `Key ${falKey}` } }
         );
         const resultData = await resultRes.json();
         return resultData.audio?.url || resultData.audio_url || resultData.output?.url;
@@ -107,6 +111,12 @@ async function synthesizeKokoro({ text, voiceId, apiKey }) {
 }
 
 async function synthesizeElevenLabs({ text, voiceId, apiKey, falApiKey, character, voiceSettings }) {
+  // Use provided key or fall back to env
+  const elevenLabsKey = apiKey || process.env.ELEVENLABS_API_KEY;
+  if (!elevenLabsKey) {
+    throw new Error('ElevenLabs API key required — enter it in the Voice tab or set ELEVENLABS_API_KEY in backend/.env');
+  }
+
   // Resolve character preset
   let finalVoiceId = voiceId;
   let finalSettings = voiceSettings || {
@@ -127,7 +137,7 @@ async function synthesizeElevenLabs({ text, voiceId, apiKey, falApiKey, characte
     headers: {
       'Accept': 'audio/mpeg',
       'Content-Type': 'application/json',
-      'xi-api-key': apiKey
+      'xi-api-key': elevenLabsKey
     },
     body: JSON.stringify({
       text,
