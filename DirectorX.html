@@ -1422,13 +1422,14 @@
       <div class="api-key-wrap" id="imageServerWrapper" style="display:none;">
         <div class="api-label" style="color:#D4A437">Image Server</div>
         <input class="api-key-input" id="imageServerUrl" type="text" placeholder="Paste ngrok URL from Image Server notebook">
-        
-        <!-- Kling SK input (hidden by default) -->
-        <div class="api-label" id="klingSkLabel" style="display: none;">Secret Key</div>
-        <input class="api-key-input" id="klingSecretKeyInput" type="password" placeholder="Kling Secret Key (SK)" style="display: none; max-width: 250px;">
-        
-        <button class="api-save-btn" style="background: var(--green);" onclick="saveVideoApiKey()">Save Keys</button>
+        <button class="api-save-btn" style="background: #D4A437;" onclick="saveImageServerUrl()">Save</button>
       </div>
+        
+      <!-- Kling SK input (hidden by default) -->
+      <div class="api-label" id="klingSkLabel" style="display: none;">Secret Key</div>
+      <input class="api-key-input" id="klingSecretKeyInput" type="password" placeholder="Kling Secret Key (SK)" style="display: none; max-width: 250px;">
+        
+      <button class="api-save-btn" style="background: var(--green);" onclick="saveVideoApiKey()">Save Keys</button>
       <div class="api-status off" id="videoApiStatus">No Video Key</div>
       <div class="api-privacy">🔒 Keys stored in browser only</div>
     </div>
@@ -2062,10 +2063,11 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
     // ── VIDEO GENERATION API SETUP ─────────────────────────────────────
     function updateVideoModels() {
       // Show/hide image server URL based on provider
+      const currentProvider = document.getElementById('videoProviderSelect').value;
       const imgWrap = document.getElementById('imageServerWrapper');
       const vidWrap = document.getElementById('videoKeyWrapper');
       if (imgWrap) {
-        if (videoProvider === 'image-pipeline') {
+        if (currentProvider === 'image-pipeline') {
           imgWrap.style.display = '';
           if (vidWrap) vidWrap.style.display = 'none';
           // Load saved URL
@@ -2079,6 +2081,20 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
 
       videoProvider = document.getElementById('videoProviderSelect').value;
       const sel = document.getElementById('videoModelSelect');
+
+      if (videoProvider === 'image-pipeline') {
+        document.getElementById('klingSkLabel').style.display = 'none';
+        document.getElementById('klingSecretKeyInput').style.display = 'none';
+        sel.innerHTML = '<option value="sdxl-1.0">SDXL 1.0 (Best Quality)</option><option value="sd-1.5">SD 1.5 (Lighter)</option>';
+        const savedUrl = localStorage.getItem('twain_image_server_url');
+        if (savedUrl) {
+          document.getElementById('imageServerUrl').value = savedUrl;
+          setVideoStatus(true);
+        } else {
+          setVideoStatus(false);
+        }
+        return;
+      }
 
       if (videoProvider === 'colab-local') {
         document.getElementById('videoKeyLabel').textContent = 'Colab URL';
@@ -2142,6 +2158,17 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
         }
       }
       checkCustomModel();
+    }
+
+    function saveImageServerUrl() {
+      const url = document.getElementById('imageServerUrl').value.trim();
+      if (url) {
+        localStorage.setItem('twain_image_server_url', url);
+        document.getElementById('videoApiStatus').textContent = '✅ Image Server saved';
+        document.getElementById('videoApiStatus').className = 'api-status on';
+      } else {
+        alert('Paste your ngrok URL first.');
+      }
     }
 
     function saveVideoApiKey() {
