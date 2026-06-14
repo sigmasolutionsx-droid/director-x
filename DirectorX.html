@@ -4289,6 +4289,41 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
       });
     }
 
+    function drawPacingCurve() {
+      const container = document.getElementById('pacingChartContainer');
+      if (!container) return;
+      if (scenes.length === 0) {
+        container.innerHTML = '<div style="flex:1;display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:9px;">Load scenes to draw pacing wave map</div>';
+        return;
+      }
+
+      const PACING_MAP = {
+        'Hook': 0.7, 'Establish': 0.3, 'Tension': 0.6, 'Rising': 0.65,
+        'Action': 0.95, 'Climax': 1.0, 'Aftermath': 0.25, 'Calm': 0.2,
+        'Dialogue': 0.4, 'Montage': 0.5, 'General': 0.5
+      };
+      const PACING_COLOR = {
+        'Hook': '#D4A437', 'Establish': '#5B8A72', 'Tension': '#C47F17',
+        'Rising': '#C47F17', 'Action': '#A0522D', 'Climax': '#8B0000',
+        'Aftermath': '#5B8A72', 'Calm': '#5B8A72', 'Dialogue': '#6A8EAE',
+        'Montage': '#B87333', 'General': '#888'
+      };
+
+      let bars = '';
+      scenes.forEach((s, i) => {
+        const type = s.type || 'General';
+        const intensity = PACING_MAP[type] || 0.5;
+        const height = Math.max(10, intensity * 100);
+        const color = PACING_COLOR[type] || '#888';
+        bars += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;" title="Scene ${s.num}: ${type} (${(intensity*100).toFixed(0)}%)">
+          <div style="font-size:7px;color:var(--muted);margin-bottom:2px;">${s.num}</div>
+          <div style="width:100%;max-width:28px;height:${height}%;background:${color};border-radius:3px 3px 0 0;transition:height 0.3s;opacity:0.85;"></div>
+          <div style="font-size:6px;color:${color};margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;">${type.slice(0,4)}</div>
+        </div>`;
+      });
+      container.innerHTML = bars;
+    }
+
     function renderTimeline() {
       const track = document.getElementById('tlTrack');
       track.innerHTML = '';
