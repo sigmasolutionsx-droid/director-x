@@ -2363,15 +2363,20 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
       text = text.trim();
       let rawScenes = [];
 
-      if (text.startsWith('[') && text.endsWith(']')) {
+      // Detect JSON input — array [...] or wrapper object { scenes: [...] }
+      if ((text.startsWith('[') && text.endsWith(']')) || (text.startsWith('{') && text.endsWith('}'))) {
         try {
-          const parsed = JSON.parse(text);
+          let parsed = JSON.parse(text);
+          // Handle wrapper object: { series, episode, scenes: [...] }
+          if (!Array.isArray(parsed) && parsed.scenes && Array.isArray(parsed.scenes)) {
+            parsed = parsed.scenes;
+          }
           if (Array.isArray(parsed)) {
             rawScenes = parsed.map((s, idx) => ({
-              num: s.num || (idx + 1),
+              num: s.num || s.sceneNumber || s.scene || (idx + 1),
               type: s.type || 'General',
-              desc: s.desc || s.visual || s.description || 'No description provided',
-              voiceover: s.voiceover || s.vo || '',
+              desc: s.desc || s.visual || s.description || s.visualPrompt || s.text || 'No description provided',
+              voiceover: s.voiceover || s.vo || s.narration || '',
               duration: s.duration || s.length || 4,
               mood: s.mood || 'Cinematic',
               shotType: s.shotType || 'Medium',
@@ -2757,35 +2762,13 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
             renderScenes();
 
           } catch (err) {
-            const paragraphs = articleText.split(/\n\n+/).filter(p => p.trim().length > 30);
-            const fallbackScenes = paragraphs.slice(0, 20).map((p, idx) => ({
-              num: idx + 1,
-              type: idx === 0 ? 'Hook' : 'General',
-              desc: p.trim().substring(0, 300),
-              voiceover: '',
-              duration: 5,
-              mood: 'Cinematic',
-              shotType: 'Medium',
-              platform: 'image-pipeline',
-              exportAspect: aspect
-            }));
-            document.getElementById('scenePasteArea').value = JSON.stringify(fallbackScenes, null, 2);
+            // Fallback: try JSON detection first, then paragraph splitting
+            document.getElementById('scenePasteArea').value = articleText;
             triggerParseAndLoad();
           }
         } else {
-          const paragraphs = articleText.split(/\n\n+/).filter(p => p.trim().length > 30);
-          const fallbackScenes = paragraphs.slice(0, 20).map((p, idx) => ({
-            num: idx + 1,
-            type: idx === 0 ? 'Hook' : 'General',
-            desc: p.trim().substring(0, 300),
-            voiceover: '',
-            duration: 5,
-            mood: 'Cinematic',
-            shotType: 'Medium',
-            platform: 'image-pipeline',
-            exportAspect: aspect
-          }));
-          document.getElementById('scenePasteArea').value = JSON.stringify(fallbackScenes, null, 2);
+          // No backend — try JSON detection (parsePastedScenes handles JSON natively)
+          document.getElementById('scenePasteArea').value = articleText;
           triggerParseAndLoad();
         }
 
