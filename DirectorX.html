@@ -1769,11 +1769,15 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
 
           <!-- Export Actions -->
           <div style="display:flex; gap:8px; flex-wrap:wrap; border-top:1px solid var(--border); padding-top:12px;">
-            <button class="btn btn-pri" onclick="exportAllVideos()" style="flex:1;">📦 Export All Videos (ZIP)</button>
+            <button class="btn btn-pri" onclick="exportAllAssets()" style="flex:1;">📦 Download All Images</button>
+            <button class="btn btn-pri" onclick="exportAllVoiceovers()" style="flex:1; background:linear-gradient(135deg, #9b59b6, #8e44ad);">🎙️ Download All Voiceovers</button>
             <button class="btn btn-pri" onclick="exportSEOPackage()" style="flex:1; background:linear-gradient(135deg, #ff6719, #e05500);">📰 Export SEO Package (JSON)</button>
-            <button class="btn btn-ghost" onclick="downloadVideoForPlatform('youtube')" style="flex:1;">▶️ Download YT (16:9)</button>
-            <button class="btn btn-ghost" onclick="downloadVideoForPlatform('tiktok')" style="flex:1;">🎵 Download TikTok (9:16)</button>
-            <button class="btn btn-ghost" onclick="downloadVideoForPlatform('instagram')" style="flex:1;">📷 Download IG (1:1)</button>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+            <button class="btn btn-ghost" onclick="exportAllVideos()" style="flex:1;">🎬 Export Videos (if assembled)</button>
+            <button class="btn btn-ghost" onclick="downloadVideoForPlatform('youtube')" style="flex:1;">▶️ YT (16:9)</button>
+            <button class="btn btn-ghost" onclick="downloadVideoForPlatform('tiktok')" style="flex:1;">🎵 TikTok (9:16)</button>
+            <button class="btn btn-ghost" onclick="downloadVideoForPlatform('instagram')" style="flex:1;">📷 IG (1:1)</button>
           </div>
         </div>
       </div>
@@ -3637,39 +3641,94 @@ DIRECTION: Camera holds a tight close-up, rain splashing off his hat.'></textare
       a.click();
     }
 
+    async function exportAllAssets() {
+      // Download all generated images (or videos if available)
+      const completed = scenes.filter(s => s.imageUrl || s.videoUrl);
+      if (completed.length === 0) return alert('No images or videos generated yet — run the pipeline first');
+
+      addMsg('director', '📦 Downloading ' + completed.length + ' assets...');
+      for (const s of completed) {
+        try {
+          const url = s.videoUrl || s.imageUrl;
+          const ext = s.videoUrl ? 'mp4' : 'png';
+          const res = await fetch(url);
+          const blob = await res.blob();
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'scene_' + String(s.num).padStart(3, '0') + '_' + (s.title || 'untitled').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30) + '.' + ext;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(a.href);
+          await new Promise(r => setTimeout(r, 600)); // Stagger downloads
+        } catch (err) {
+          console.warn('Failed to download scene ' + s.num + ':', err.message);
+        }
+      }
+      addMsg('director', '✅ ' + completed.length + ' files downloaded!');
+    }
+
+    async function exportAllVoiceovers() {
+      const withVoice = scenes.filter(s => s.speechAudioUrl);
+      if (withVoice.length === 0) return alert('No voiceovers generated yet — run the pipeline first');
+
+      addMsg('director', '🎙️ Downloading ' + withVoice.length + ' voiceovers...');
+      for (const s of withVoice) {
+        try {
+          const res = await fetch(s.speechAudioUrl);
+          const blob = await res.blob();
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'voice_' + String(s.num).padStart(3, '0') + '_' + (s.title || 'untitled').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30) + '.mp3';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(a.href);
+          await new Promise(r => setTimeout(r, 600));
+        } catch (err) {
+          console.warn('Failed to download voice for scene ' + s.num + ':', err.message);
+        }
+      }
+      addMsg('director', '✅ ' + withVoice.length + ' voiceovers downloaded!');
+    }
+
     async function exportAllVideos() {
-      // Collect all generated video URLs
+      // Collect all generated video URLs (assembled videos)
       const completed = scenes.filter(s => s.videoUrl);
-      if (completed.length === 0) return alert('No videos generated yet — run batch first');
+      if (completed.length === 0) {
+        // Fall back to images if no videos
+        const hasImages = scenes.filter(s => s.imageUrl);
+        if (hasImages.length > 0) {
+          return exportAllAssets();
+        }
+        return alert('No videos or images generated yet — run the pipeline first');
+      }
       
-      // Create a download manifest
-      const manifest = completed.map(s => ({
-        scene: s.num,
-        title: s.title || 'Scene ' + s.num,
-        videoUrl: s.videoUrl,
-        aspect: s.exportAspect || '16:9'
-      }));
-      
-      // Download each video
-      for (const item of manifest) {
-        const a = document.createElement('a');
-        a.href = item.videoUrl;
-        a.download = 'scene_' + String(item.scene).padStart(3, '0') + '.mp4';
-        a.target = '_blank';
-        a.click();
-        await new Promise(r => setTimeout(r, 500)); // Stagger downloads
+      addMsg('director', '🎬 Downloading ' + completed.length + ' videos...');
+      for (const s of completed) {
+        try {
+          const a = document.createElement('a');
+          a.href = s.videoUrl;
+          a.download = 'scene_' + String(s.num).padStart(3, '0') + '.mp4';
+          a.target = '_blank';
+          a.click();
+          await new Promise(r => setTimeout(r, 500));
+        } catch (err) {
+          console.warn('Failed to download video scene ' + s.num);
+        }
       }
     }
 
     function downloadVideoForPlatform(platform) {
-      const aspects = { youtube: '16:9', tiktok: '9:16', instagram: '1:1', facebook: '16:9' };
-      const completed = scenes.filter(s => s.videoUrl);
-      if (completed.length === 0) return alert('No videos generated yet');
+      const completed = scenes.filter(s => s.videoUrl || s.imageUrl);
+      if (completed.length === 0) return alert('No videos or images generated yet');
       
       for (const s of completed) {
+        const url = s.videoUrl || s.imageUrl;
+        const ext = s.videoUrl ? 'mp4' : 'png';
         const a = document.createElement('a');
-        a.href = s.videoUrl;
-        a.download = platform + '_scene_' + String(s.num).padStart(3, '0') + '.mp4';
+        a.href = url;
+        a.download = platform + '_scene_' + String(s.num).padStart(3, '0') + '.' + ext;
         a.target = '_blank';
         a.click();
       }
