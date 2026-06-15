@@ -329,10 +329,11 @@ function extractTitleInfo(text) {
 
 export async function handleSubstackParse(req, res) {
   try {
-    const { url, text, theme: requestedTheme } = req.body;
+    const { url, text, content, theme: requestedTheme } = req.body;
+    const rawText = text || content; // Accept both field names
 
-    if (!url && !text) {
-      return res.status(400).json({ error: 'Provide either url (Substack URL) or text (raw article text)' });
+    if (!url && !rawText) {
+      return res.status(400).json({ error: 'Provide either url (Substack URL) or text/content (raw article text)' });
     }
 
     // Get the article text
@@ -344,26 +345,66 @@ export async function handleSubstackParse(req, res) {
       articleText = article.body;
       articleTitle = article.title;
     } else {
-      articleText = text;
+      articleText = rawText;
     }
 
-    // Detect format
-    const format = detectFormat(articleText);
+    // ── Handle pre-formatted JSON input (e.g. from Claude) ──
+    // Detect if the input is already a JSON array/object with scenes
+    let preformattedScenes = null;
+    const trimmed = articleText.trim();
+    if ((trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+        (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        // Bare array of scene objects
+        if (Array.isArray(parsed) && parsed.length > 0 && (parsed[0].description || parsed[0].desc || parsed[0].visual || parsed[0].text || parsed[0].visualPrompt)) {
+          preformattedScenes = parsed;
+          articleTitle = parsed[0].series || parsed[0].title || 'Untitled';
+        }
+        // Wrapper object: { series, episode, scenes: [...] }
+        else if (parsed.scenes && Array.isArray(parsed.scenes)) {
+          preformattedScenes = parsed.scenes;
+          articleTitle = parsed.title || parsed.series || 'Untitled';
+        }
+      } catch (e) {
+        // Not valid JSON — continue with normal text parsing
+      }
+    }
+
+    let scenes;
+
+    if (preformattedScenes) {
+      // Map pre-formatted scenes to our standard schema
+      scenes = preformattedScenes.map((s, idx) => ({
+        sceneNumber: s.sceneNumber || s.num || s.scene || (idx + 1),
+        title: s.title || s.name || `Scene ${idx + 1}`,
+        text: s.description || s.desc || s.visual || s.text || s.visualPrompt || '',
+        voiceover: s.voiceover || s.vo || s.narration || '',
+        characters: s.characters || [],
+        mood: s.mood || 'Cinematic',
+        type: s.type || s.shotType || 'General',
+        duration: s.duration || s.length || 5,
+      }));
+      console.log(`📋 Pre-formatted JSON detected: ${scenes.length} scenes`);
+    } else {
+      // Standard text parsing
+      const format = detectFormat(articleText);
+      if (format === 'screenplay') {
+        scenes = parseScreenplay(articleText);
+      } else {
+        scenes = parseProse(articleText);
+      }
+    }
+
+    // Detect format (for response metadata)
+    const format = preformattedScenes ? 'json' : detectFormat(articleText);
 
     // Detect or use provided theme
     const themeKey = requestedTheme || detectTheme(articleText);
     const theme = themeKey ? THEMES[themeKey] : null;
 
     // Extract title info
-    const titleInfo = extractTitleInfo(articleText);
-
-    // Parse scenes
-    let scenes;
-    if (format === 'screenplay') {
-      scenes = parseScreenplay(articleText);
-    } else {
-      scenes = parseProse(articleText);
-    }
+    const titleInfo = preformattedScenes ? { title: articleTitle, episode: preformattedScenes[0]?.episode } : extractTitleInfo(articleText);
 
     // Enrich scenes with theme-specific visual prompts
     if (theme) {
